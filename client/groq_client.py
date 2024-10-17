@@ -19,15 +19,15 @@ class Client:
         return chat_completion.choices[0].message.content
 
 
-# run the client sameples
-client = Client()
+# # run the client sameples
+# client = Client()
 
-messages = [
-    {
-        "role": "user",
-        "content": "Explain the importance of fast language models",
-    }
-]
-result = client(messages)
+# messages = [
+#     {
+#         "role": "user",
+#         "content": "Explain the importance of fast language models",
+#     }
+# ]
+# result = client(messages)
 
-print(result)
+# print(result)
