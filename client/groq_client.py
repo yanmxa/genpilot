@@ -17,17 +17,3 @@ class Client:
             messages=messages, model="llama3-70b-8192"
         )
         return chat_completion.choices[0].message.content
-
-
-# # run the client sameples
-# client = Client()
-
-# messages = [
-#     {
-#         "role": "user",
-#         "content": "Explain the importance of fast language models",
-#     }
-# ]
-# result = client(messages)
-
-# print(result)

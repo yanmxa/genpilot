@@ -29,5 +29,4 @@ def wikipedia(q):
             "format": "json",  # Return results in JSON format
         },
     )
-
     return response.json()["query"]["search"][0]["snippet"]
