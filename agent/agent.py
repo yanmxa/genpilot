@@ -5,22 +5,23 @@ import json
 
 from tool import add_agent_info, wikipedia
 from client import Client
+from .validate import StatusCode, check
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 
 from rich.console import Console
 from rich.markdown import Markdown
-from rich import print
-from rich.panel import Panel
-
 
 console = Console()
 
 
 class Agent:
 
-    def __init__(self, client, name, description, tools=[], debug=False):
+    def __init__(
+        self, client, name, description, tools=[], debug=False, grant_tool=True
+    ):
         self._max_iter = 6
+        self._tool = grant_tool
         self.client = client
 
         self.name = name
@@ -31,8 +32,8 @@ class Agent:
             tools,
         )
         self.debug = debug
-        # if debug:
-        #     console.print(Markdown(self.system))
+        if debug:
+            console.print(Markdown(self.system))
         self.messages = [{"role": "system", "content": self.system}]
 
     def __call__(self, message: Union[str, Tuple[str, str]]):
@@ -47,7 +48,7 @@ class Agent:
         while i < self._max_iter:
             if i == 0 or status == StatusCode.ACTION:
                 status = self._execute()
-            else:
+            else:  # answer, Error, INVALID_JSON
                 break
             i += 1
 
@@ -56,89 +57,71 @@ class Agent:
         # https://platform.openai.com/docs/guides/chat-completions/overview
         self.messages.append({"role": "assistant", "content": ret})
 
-        status = check(ret)
-        if status == StatusCode.NONE or status == StatusCode.INVALID_JSON:
+        status, thought, next = check(ret)
+        if (
+            status == StatusCode.NONE
+            or status == StatusCode.INVALID_JSON
+            or status == StatusCode.ERROR
+        ):
+            console.print(f"{next}", style="bold red")
+            console.print(ret)
+
+            # # NOTE: Let it adjust its response; this issue occurs more frequently in the less effective model.
+            # self.messages.append(
+            #     {
+            #         "role": "user",
+            #         "content": f"{next}",
+            #     }
+            # )
+            # return StatusCode.ACTION
             return status
 
-        obj = json.loads(ret)
+        # thinking
+        console.rule("🤖  " + self.name, style="dim")
+        console.print()
+        for item in thought:
+            console.print(item)
+        console.print()
 
-        # if self.debug:
-        #     console.print_json(ret)
-
-        print(
-            ":vampire:", f"""[bold magenta]{" ".join(obj["thought"])}[/bold magenta]"""
-        )
-
-        obj = json.loads(ret)
         if status == StatusCode.ACTION:
-            action = obj["action"]
+            action = next
             func = action["name"]
             args = action["args"]
 
-            formatted_args = ", ".join(
-                f"{key} = '{value}'" for key, value in args.items()
-            )
-            console.print(f"Tool: {func}({formatted_args})", style="bold yellow")
+            # tool
+            tool_info = f"🛠  [yellow]{func}[/yellow] - {args}"
+            if not self._tool:
+                console.print(tool_info)
+            else:
+                if not self.get_execution_permission(tool_info):
+                    return
 
-            # TODO: add permission for the action
+            # obs
             observation = eval(f"{func}(**args)")
-            print(Panel(observation))
+            console.print(f"{observation}\n", style="italic dim")
+
             self.messages.append(
                 {
                     "role": "user",
-                    "content": f"the action observation: {observation}",
+                    "content": f"the result of action: {observation}",
                 }
             )
         elif status == StatusCode.ANSWER:
-            console.print(obj["answer"], style="bold green")
-            answer = obj["answer"]
-            self.messages.append(
-                {"role": "assistant", "content": f"the answer: {answer}"}
-            )
+            answer = next
+            console.print(f"✨ {answer}", style="bold green")
 
         return status
 
-
-from enum import Enum
-
-
-class StatusCode(Enum):
-    ACTION = 400  # Only action exists
-    ANSWER = 401  # Only answer exists
-    NONE = 404  # Neither action nor answer exists
-    INVALID_JSON = 500  # Error: Invalid JSON
-
-
-def check(input_string):
-    try:
-        data = json.loads(input_string)
-
-        has_action = "action" in data and data["action"] is not None
-        has_answer = "answer" in data and data["answer"] is not None
-        has_thought = "thought" in data and data["thought"] is not None
-
-        if not has_thought:
-            raise ValueError("No thought provided.")
-        if has_action and has_answer:
-            raise ValueError("Conflict: both action and answer exist.")
-        if not has_action and not has_answer:
-            raise ValueError("No action or answer provided.")
-        if has_action:
-            action = data["action"]
-            has_func = "name" in action and action is not None
-            has_args = "args" in action and action is not None
-            if not has_func or not has_args:
-                raise ValueError("No name or args provided in action")
-            return StatusCode.ACTION
-        if has_answer:
-            return StatusCode.ANSWER
-
-        # Default return if none of the cases match (shouldn't occur)
-        return StatusCode.NONE
-
-    except json.JSONDecodeError as e:
-        console.print(f"Invalid JSON: {input_string}. Error: {e}", style="bold red")
-        return StatusCode.INVALID_JSON
-    except ValueError as e:
-        console.print(f"Error: {e}", style="bold red")
-        return StatusCode.NONE
+    def get_execution_permission(self, tool_info):
+        while True:
+            proceed = console.input(f"{tool_info}  👉 [dim]Y/N: [/dim]").strip().upper()
+            if proceed == "Y":
+                console.print()
+                return True
+            elif proceed == "N":
+                console.print("🚫 Action cancelled by the user.\n", style="red")
+                return False
+            else:
+                console.print(
+                    "⚠️ Invalid input! Please enter 'Y' or 'N'.\n", style="yellow"
+                )

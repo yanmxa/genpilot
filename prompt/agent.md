@@ -7,7 +7,7 @@
 
 ## Response
 
-Your response must be a JSON object containing the following fields:
+Your response must be a JSON object containing the following fields (nothing but JSON):
 
 1. thought: Represents your internal thought process regarding the current task. This field is used to plan the solution and outline the next steps.
 2. action: Describes the tool needed to gather knowledge or perform actions.
@@ -18,6 +18,8 @@ Your response must be a JSON object containing the following fields:
 Note: Your response should include either the action, or the answer field — but not both at the same time.
 
 ### Response example
+
+- with tool
 
 ```json
 {
@@ -31,7 +33,32 @@ Note: Your response should include either the action, or the answer field — bu
     "name": "tool_name",
     "args": {"arg1": "val1", "arg2": "val2", "arg3": "val3"},
   },
+}
+```
+
+- with answer
+
+```json
+{
+  "thought": [
+    "The user has requested extracting a zip file downloaded yesterday.",
+    "Steps to solution are...",
+    "I will process step by step...",
+    "Analysis of step..."
+  ],
   "answer": "the zip file is ..."
+}
+```
+
+- waiting task
+
+```json
+{
+  "thought": [
+    "Waiting for a task or question from the other party... ",
+    "I'm ready to assist."
+  ],
+  "answer": "Waiting for input..."
 }
 ```
 
@@ -46,8 +73,3 @@ Note: Your response should include either the action, or the answer field — bu
 4. After each subtask is done, remember the progress in the plan and guide/replan the following subtask based on the above result.
 
 5. If no tools are available in your response, summarize the result for the initial question in the 'answer' field.
-
-6. Completing the task
-    - Consolidate all subtasks and explain the status.
-    - Verify the result using your tools if possible (check created files etc.)
-    - Do not accept failure, search for error solution and try again with fixed input or different ways.
