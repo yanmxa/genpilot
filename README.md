@@ -19,7 +19,7 @@
 - Governed Actions
 
   Actions performed by the ZenAgent are regulated by developers with three permission levels:  
-  - **`auto`**: Requests permission only for actions that modify the system or environment; no permission is required for read actions.  
+  - **`auto`**: Requests permission only for actions that modify the system or environment
   - **`always`**: Requests permission for every action.  
   - **`none`**: Never requests permission.  
 
