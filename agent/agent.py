@@ -14,6 +14,7 @@ from rich.console import Console
 from rich.markdown import Markdown
 from rich.syntax import Syntax
 from rich.pretty import Pretty
+from rich.prompt import Prompt
 
 console = Console()
 
@@ -51,7 +52,11 @@ class Agent:
         while i < self._max_iter:
             if i == 0 or status == StatusCode.ACTION:
                 status = self._execute()
-            else:  # answer, Error, INVALID_JSON
+            elif status == StatusCode.ANSWER:
+                #TODO: ending
+                break
+            else:  # Error, INVALID_JSON
+                #TODO: error handling
                 break
             i += 1
 
@@ -119,7 +124,15 @@ class Agent:
             )
         elif status == StatusCode.ANSWER:
             answer = next
-            console.print(f"✨ {answer}", style="bold green")
+            console.print(f"✨ {answer} \n", style="bold green")
+            
+            user_input = Prompt.ask("Enter prompt or '[red]exit[/red]' to quit").strip().lower()
+            if user_input == "exit":
+                console.print("[bold red]Goodbye![/bold red]\n")
+            else:
+                self.messages.append({"role": "user","content": f"{user_input}"})
+                # convert the user input into an action
+                return StatusCode.ACTION
 
         return status
 
