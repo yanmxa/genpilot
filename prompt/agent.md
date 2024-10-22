@@ -73,3 +73,5 @@ Note: Your response should include either the action, or the answer field — bu
 4. After each subtask is done, remember the progress in the plan and guide/replan the following subtask based on the above result.
 
 5. If no tools are available in your response, summarize the result for the initial question in the 'answer' field.
+
+6. If the json action include code or code block, ensure it within the response JSON object are formatted properly, either by placing them on a single line or replaced all newline characters (\n) to maintain code structure, and avoid breaking JSON response validation.

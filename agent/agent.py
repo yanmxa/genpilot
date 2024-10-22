@@ -5,12 +5,15 @@ import json
 
 from tool import add_agent_info, wikipedia
 from client import Client
+from tool.code_executor import execute_code
 from .validate import StatusCode, check
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 
 from rich.console import Console
 from rich.markdown import Markdown
+from rich.syntax import Syntax
+from rich.pretty import Pretty
 
 console = Console()
 
@@ -32,8 +35,8 @@ class Agent:
             tools,
         )
         self.debug = debug
-        if debug:
-            console.print(Markdown(self.system))
+        # if debug:
+        #     console.print(Markdown(self.system))
         self.messages = [{"role": "system", "content": self.system}]
 
     def __call__(self, message: Union[str, Tuple[str, str]]):
@@ -90,14 +93,22 @@ class Agent:
 
             # tool
             tool_info = f"🛠  [yellow]{func}[/yellow] - {args}"
-            if not self._tool:
-                console.print(tool_info)
-            else:
-                if not self.get_execution_permission(tool_info):
-                    return
+            code_syntax = None
+            if func == "execute_code":
+                tool_info = f"🛠  [yellow]{args['language']}[/yellow]"
+                code_syntax = Syntax(
+                    args["code"], args["language"], theme="monokai", line_numbers=True
+                )
+
+            # Print tool info only if the tool is not set or if permission is granted
+            if not self.get_execution_permission(tool_info, code_syntax):
+                return
 
             # obs
-            observation = eval(f"{func}(**args)")
+            if func == "execute_code":
+                observation = execute_code(args["language"], args["code"])
+            else:
+                observation = eval(f"{func}(**args)")
             console.print(f"{observation}\n", style="italic dim")
 
             self.messages.append(
@@ -112,7 +123,14 @@ class Agent:
 
         return status
 
-    def get_execution_permission(self, tool_info):
+    def get_execution_permission(self, tool_info, code_syntax=None):
+        if code_syntax:
+            console.print(code_syntax)
+            console.print()
+        if not self._tool:
+            console.print(tool_info)
+            return True
+
         while True:
             proceed = console.input(f"{tool_info}  👉 [dim]Y/N: [/dim]").strip().upper()
             if proceed == "Y":
