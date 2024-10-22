@@ -9,6 +9,7 @@ class StatusCode(Enum):
     NONE = 404  # Neither action nor answer exists
     INVALID_JSON = 500  # Error: Invalid JSON
     ERROR = 501
+    ACTION_FORBIDDEN = 502
 
 
 def check(input_string):
@@ -26,6 +27,9 @@ def check(input_string):
         has_answer = "answer" in data and data["answer"] is not None
         has_thought = "thought" in data and data["thought"] is not None
 
+        if not has_thought and has_answer:
+            return StatusCode.ANSWER, None, data["answer"]
+
         if not has_thought:
             raise ValueError("No thought provided.")
         if has_action and has_answer:
@@ -36,8 +40,9 @@ def check(input_string):
             action = data["action"]
             has_func = "name" in action and action is not None
             has_args = "args" in action and action is not None
-            if not has_func or not has_args:
-                raise ValueError("No name or args provided in action")
+            has_edit = "edit" in action and action is not None
+            if not has_func or not has_args or not has_edit:
+                raise ValueError("No name, args, or edit provided in action")
             return StatusCode.ACTION, data["thought"], data["action"]
         if has_answer:
             return StatusCode.ANSWER, data["thought"], data["answer"]

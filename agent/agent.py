@@ -1,11 +1,9 @@
 from typing import Union, Tuple
 import os
 import sys
-import json
 
-from tool import add_agent_info, wikipedia
+from tool import add_agent_info, Permission, execute_code, extract_function_info
 from client import Client
-from tool.code_executor import execute_code
 from .validate import StatusCode, check
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -13,8 +11,9 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 from rich.console import Console
 from rich.markdown import Markdown
 from rich.syntax import Syntax
-from rich.pretty import Pretty
 from rich.prompt import Prompt
+import importlib
+import inspect
 
 console = Console()
 
@@ -22,19 +21,22 @@ console = Console()
 class Agent:
 
     def __init__(
-        self, client, name, description, tools=[], debug=False, grant_tool=True
+        self,
+        client,
+        name,
+        description,
+        tools=[],
+        debug=False,
+        permission=Permission.ALWAYS,
     ):
         self._max_iter = 6
-        self._tool = grant_tool
+        self._permission = permission
         self.client = client
+        self.functions = {}
 
         self.name = name
-        self.system = add_agent_info(
-            os.path.join(current_dir, "..", "prompt", "agent.md"),
-            name,
-            description,
-            tools,
-        )
+        self.role_description = description
+        self.system = self.register(tools)
         self.debug = debug
         # if debug:
         #     console.print(Markdown(self.system))
@@ -52,13 +54,13 @@ class Agent:
         while i < self._max_iter:
             if i == 0 or status == StatusCode.ACTION:
                 status = self._execute()
-            elif status == StatusCode.ANSWER:
-                #TODO: ending
-                break
-            else:  # Error, INVALID_JSON
-                #TODO: error handling
-                break
+            elif status == StatusCode.ACTION_FORBIDDEN or status == StatusCode.ANSWER:
+                return
+            else:  # ERROR, INVALID_JSON
+                console.print("💣 [bold red]Error Caught![/bold red]\n")
+                return
             i += 1
+        console.print("[red]Reached maximum of {self._max_iter} iterations![/red]\n")
 
     def _execute(self):
         ret = self.client(self.messages)
@@ -87,60 +89,101 @@ class Agent:
         # thinking
         console.rule("🤖  " + self.name, style="dim")
         console.print()
-        for item in thought:
-            console.print(item)
-        console.print()
+        if thought:
+            for item in thought:
+                console.print(item)
+            console.print()
 
         if status == StatusCode.ACTION:
             action = next
-            func = action["name"]
+            func_name = action["name"]
             args = action["args"]
+            edit = action["edit"]
 
-            # tool
-            tool_info = f"🛠  [yellow]{func}[/yellow] - {args}"
-            code_syntax = None
-            if func == "execute_code":
-                tool_info = f"🛠  [yellow]{args['language']}[/yellow]"
-                code_syntax = Syntax(
-                    args["code"], args["language"], theme="monokai", line_numbers=True
+            # not register -> next
+            if not func_name in self.functions:
+                console.print(
+                    f"[yellow]The func: {func_name} isn't registered![/yellow]\n"
                 )
+                console.print(action)
+                self.messages.append(
+                    {
+                        "role": "user",
+                        "content": f"not found {func_name} in available tools",
+                    }
+                )
+                return StatusCode.ACTION
 
-            # Print tool info only if the tool is not set or if permission is granted
-            if not self.get_execution_permission(tool_info, code_syntax):
-                return
+            # not allow -> exit
+            if not self.get_execution_permission(func_name, args, edit):
+                return StatusCode.ACTION_FORBIDDEN
 
-            # obs
-            if func == "execute_code":
-                observation = execute_code(args["language"], args["code"])
-            else:
-                observation = eval(f"{func}(**args)")
+            # observation -> next
+            module_name = self.functions[func_name]
+            if module_name not in globals():
+                globals()[module_name] = importlib.import_module(module_name)
+            func = getattr(sys.modules[module_name], func_name)
+            observation = func(**args)
+
             console.print(f"{observation}\n", style="italic dim")
-
             self.messages.append(
                 {
                     "role": "user",
                     "content": f"the result of action: {observation}",
                 }
             )
+            return StatusCode.ACTION
         elif status == StatusCode.ANSWER:
             answer = next
             console.print(f"✨ {answer} \n", style="bold green")
-            
-            user_input = Prompt.ask("Enter prompt or '[red]exit[/red]' to quit").strip().lower()
+
+            user_input = (
+                Prompt.ask("Enter prompt or '[red]exit[/red]' to quit").strip().lower()
+            )
             if user_input == "exit":
                 console.print("[bold red]Goodbye![/bold red]\n")
+                return StatusCode.ANSWER
             else:
-                self.messages.append({"role": "user","content": f"{user_input}"})
-                # convert the user input into an action
+                self.messages.append({"role": "user", "content": f"{user_input}"})
                 return StatusCode.ACTION
 
-        return status
+    def register(self, tools) -> str:
+        with open(os.path.join(current_dir, "..", "prompt", "agent.md"), "r") as f:
+            agent_info = f.read()
+        agent_info = agent_info.replace("{{name}}", self.name)
+        agent_info = agent_info.replace("{{role_description}}", self.role_description)
 
-    def get_execution_permission(self, tool_info, code_syntax=None):
-        if code_syntax:
-            console.print(code_syntax)
+        self.functions = {}
+        tools_info = ["## Tools available:\n"]
+        for tool in tools:
+            module_name, func_name, params, doc = extract_function_info(tool)
+            tool_md = f"### {func_name}\n"
+            tool_md += f"**Parameters**: {', '.join(params)}\n\n"
+            tool_md += f"**Description**:\n\n{doc}\n"
+            tools_info.append(tool_md)
+            self.functions[func_name] = module_name
+        if len(tools) == 0:
+            tools_info.append("### No tools are available")
+        agent_info = agent_info + "\n".join(tools_info)
+        return agent_info
+
+    def get_execution_permission(self, func, args, edit):
+        tool_info = f"🛠  [yellow]{func}[/yellow] - {args}"
+        if func == "execute_code":
+            tool_info = f"🛠  [yellow]{args['language']}[/yellow]"
+            console.print(
+                Syntax(
+                    args["code"], args["language"], theme="monokai", line_numbers=True
+                )
+            )
+            edit = 1  # always request permission for code executor
             console.print()
-        if not self._tool:
+
+        if self._permission == Permission.NONE:
+            console.print(tool_info)
+            return True
+
+        if self._permission == Permission.AUTO and edit == 0:
             console.print(tool_info)
             return True
 

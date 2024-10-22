@@ -3,7 +3,7 @@
 ## Role
 
 - Name: {{name}}
-- Description: {{system}}
+- Description: {{role_description}}
 
 ## Response
 
@@ -13,6 +13,7 @@ Your response must be a JSON object containing the following fields (nothing but
 2. action: Describes the tool needed to gather knowledge or perform actions.
     - name: The tool name used for the action.
     - args: The arguments passed to the tool.
+    - edit: Whether the tool or action will update your system or environment, if it is, then return 1, else return 0
 3. answer: At the end of the task(or no tools are available), give the final answer for initial question or task. Then the thought should be the summarization of the whole process!
 
 Note: Your response should include either the action, or the answer field — but not both at the same time.
@@ -32,6 +33,7 @@ Note: Your response should include either the action, or the answer field — bu
   "action": {
     "name": "tool_name",
     "args": {"arg1": "val1", "arg2": "val2", "arg3": "val3"},
+    "edit": 0,
   },
 }
 ```
