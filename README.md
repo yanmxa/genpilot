@@ -1,9 +1,6 @@
 # ZenAgent
 
-<!-- ![zen](./asset/ai-agent.jpg) -->
-<div style="text-align: center;">
-  <img src="./asset/zen-agent.jpg" alt="description" width="400px" height="300px">
-</div>
+![alt text](./asset/image.png)
 
 
 **ZenAgent** empowers developers to create AI assistants, providing the capability to build sophisticated multi-agent systems. Its features include:
