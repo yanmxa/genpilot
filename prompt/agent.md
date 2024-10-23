@@ -1,5 +1,7 @@
 # Assistant System Manual
 
+The current time is {{time}}
+
 ## Role
 
 - Name: {{name}}

@@ -1,9 +1,10 @@
 from typing import Union, Tuple
 import os
 import sys
+import datetime
 
 from tool import add_agent_info, Permission, execute_code, extract_function_info
-from client import Client
+from client import GroqClient
 from .validate import StatusCode, check
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -150,6 +151,10 @@ class Agent:
     def register(self, tools) -> str:
         with open(os.path.join(current_dir, "..", "prompt", "agent.md"), "r") as f:
             agent_info = f.read()
+
+        agent_info = agent_info.replace(
+            "{{time}}", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        )
         agent_info = agent_info.replace("{{name}}", self.name)
         agent_info = agent_info.replace("{{role_description}}", self.role_description)
 

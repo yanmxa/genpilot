@@ -57,4 +57,5 @@ def execute_code(language, code):
         print(code)
         return f"Error executing {language} code: {e.stderr}"
     except Exception as e:
-        return f"code: \n{code}\n{traceback.format_exc()}"
+        return f"Error: \n {traceback.format_exc()}"
+        # return f"code: \n{code}\n{traceback.format_exc()}"
