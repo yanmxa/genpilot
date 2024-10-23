@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./asset/zen-agent.jpg" width="250", height="300" />
+  <img src="./asset/zen-agent.jpg" width="200", height="240" />
 </p>
 
 ---
