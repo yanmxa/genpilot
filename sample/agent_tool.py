@@ -11,7 +11,6 @@ a = Agent(
     "Assistant AI",
     "You are an assistant to solve tasks",
     tools=[wikipedia],
-    debug=True,
     permission=Permission.ALWAYS,
 )
 

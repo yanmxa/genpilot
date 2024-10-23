@@ -16,7 +16,15 @@
 
 - Tool Integration
 
-  Unlike [LangChain](https://python.langchain.com/docs/how_to/custom_tools/) or [AutoGen](https://microsoft.github.io/autogen/0.2/docs/tutorial/tool-use/), which require following serval rules to register functions or tools, ZenAgent allows you to simply write a function and add a comment. The agent will automatically use the tool to solve tasks. See `sample/agent_tool.py` for a quick start.
+  Unlike [LangChain](https://python.langchain.com/docs/how_to/custom_tools/) or [AutoGen](https://microsoft.github.io/autogen/0.2/docs/tutorial/tool-use/), which require following serval rules to register functions or tools, ZenAgent allows you to simply write a function and add a comment. The agent will automatically use the tool to solve tasks. As shown in the example below, check out sample/agent_tool.py for a quick start.
+
+  ```python
+  Agent(
+    model_client,
+    "Assistant AI", "You are an assistant to solve tasks",
+    tools=[wikipedia],
+  )
+  ```
 
 - Governed Actions
 
