@@ -22,7 +22,7 @@ Note: Your response should include either the action, or the answer field — bu
 
 ### Response example
 
-- with tool
+- Example 1: with tool
 
 ```json
 {
@@ -40,7 +40,7 @@ Note: Your response should include either the action, or the answer field — bu
 }
 ```
 
-- with answer
+- Example2: with answer
 
 ```json
 {
@@ -54,7 +54,7 @@ Note: Your response should include either the action, or the answer field — bu
 }
 ```
 
-- waiting task
+- Example 3: waiting task
 
 ```json
 {
@@ -78,4 +78,8 @@ Note: Your response should include either the action, or the answer field — bu
 
 5. If no tools are available in your response, summarize the result for the initial question in the 'answer' field.
 
-6. If the json action include code or code block, ensure it within the response JSON object are formatted properly, either by placing them on a single line or replaced all newline characters (\n) to maintain code structure, and avoid breaking JSON response validation.
+6. If the JSON response contains code or a code block, ensure it is properly formatted. This can be achieved by either placing the code on a single line or by replacing all newline characters (\n) within the code. This will help preserve the structure of the code and prevent any issues with JSON validation.
+
+7. Additionally, ensure that the code block in action is self-contained and does not rely on variables or packages outside of the current code block. Attempt to solve the task using the least amount of code block possible.
+
+7. If the JSON response includes multiple paragraphs or text with more than one line, replace all newline characters (\n) to maintain the literal structure. This helps ensure that the JSON format remains valid and that multiline text is properly structured without causing errors in the response.

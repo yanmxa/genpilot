@@ -8,17 +8,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-# Llama 3.2 Instruct (90B) pricing
-price_per_1000_input = 0.002  # $0.002 per 1000 input tokens
-price_per_1000_output = 0.002  # $0.002 per 1000 output tokens
 console = Console()
 
 
 class BedRockClient:
-    def __init__(self):
+    def __init__(
+        self, model_id, inference_config, price_per_1000_input, price_per_1000_output
+    ):
         # reference: https://community.aws/content/2hHgVE7Lz6Jj1vFv39zSzzlCilG/getting-started-with-the-amazon-bedrock-converse-api?lang=en
-        self.model_id = "us.meta.llama3-2-90b-instruct-v1:0"
-        self.inference_config = {"maxTokens": 512, "temperature": 0.2}
+        self.model_id = model_id
+        self.inference_config = inference_config
+        self.price_per_1000_input = price_per_1000_input
+        self.price_per_1000_output = price_per_1000_output
+        self.total_price = 0
+
         session = boto3.Session()
         self.client = session.client(
             "bedrock-runtime",
@@ -26,7 +29,6 @@ class BedRockClient:
             aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
             aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
         )
-        self.total_price = 0
 
     def __call__(self, messages):
         message_list = []
@@ -46,8 +48,8 @@ class BedRockClient:
         cost = calculate_llm_price(
             usage["inputTokens"],
             usage["outputTokens"],
-            price_per_1000_input,
-            price_per_1000_output,
+            self.price_per_1000_input,
+            self.price_per_1000_output,
         )
         self.total_price += cost
         console.print(f"Total Cost: {self.total_price}", style="italic dim")

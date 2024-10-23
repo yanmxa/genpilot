@@ -3,18 +3,15 @@ import os
 import sys
 import datetime
 
-from tool import add_agent_info, Permission, execute_code, extract_function_info
-from client import GroqClient
+from tool import Permission, extract_function_info
 from .validate import StatusCode, check
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 
 from rich.console import Console
-from rich.markdown import Markdown
 from rich.syntax import Syntax
 from rich.prompt import Prompt
 import importlib
-import inspect
 
 console = Console()
 
@@ -55,13 +52,20 @@ class Agent:
         while i < self._max_iter:
             if i == 0 or status == StatusCode.ACTION:
                 status = self._execute()
-            elif status == StatusCode.ACTION_FORBIDDEN or status == StatusCode.ANSWER:
+            elif status == StatusCode.ACTION_FORBIDDEN:
+                console.print("🚫 Action cancelled by the user.\n", style="red")
                 return
-            else:  # ERROR, INVALID_JSON
+            elif status == StatusCode.ANSWER:
+                console.print("\n👋 [blue]GoodBye![blue]\n")
+                return
+            elif status == StatusCode.ERROR or status == StatusCode.INVALID_JSON:
                 console.print("💣 [bold red]Error Caught![/bold red]\n")
                 return
             i += 1
-        console.print("[red]Reached maximum of {self._max_iter} iterations![/red]\n")
+        if i == self._max_iter:
+            console.print(
+                f"[red]Reached maximum of {self._max_iter} iterations![/red]\n"
+            )
 
     def _execute(self):
         ret = self.client(self.messages)
@@ -139,13 +143,14 @@ class Agent:
             console.print(f"✨ {answer} \n", style="bold green")
 
             user_input = (
-                Prompt.ask("Enter prompt or '[red]exit[/red]' to quit").strip().lower()
+                Prompt.ask("🧘 [dim][red]Exit[/red] to quit[/dim]").strip().lower()
             )
-            if user_input == "exit":
-                console.print("[bold red]Goodbye![/bold red]\n")
+            if user_input == "exit" or user_input == "e":
                 return StatusCode.ANSWER
             else:
+                console.print()
                 self.messages.append({"role": "user", "content": f"{user_input}"})
+                self._max_iter += self._max_iter
                 return StatusCode.ACTION
 
     def register(self, tools) -> str:
@@ -198,7 +203,6 @@ class Agent:
                 console.print()
                 return True
             elif proceed == "N":
-                console.print("🚫 Action cancelled by the user.\n", style="red")
                 return False
             else:
                 console.print(
