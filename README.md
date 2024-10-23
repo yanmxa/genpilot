@@ -8,7 +8,9 @@
 
 **ZenAgent** empowers developers to create AI assistants, providing the capability to build sophisticated multi-agent systems. Its features include:
 
-- Autonomy
+- Boost Autonomy
+
+  ![alt text](./asset/autonomy.png)
 
   ZenAgent differ from those in systems like [AutoGen](https://microsoft.github.io/autogen/0.2/). With built-in tools, they operate independently, eliminating the need to rely on other agents for information. This allows them to iterate on a task before delivering results or involving another agent, reducing unnecessary interactions and agents.
 
