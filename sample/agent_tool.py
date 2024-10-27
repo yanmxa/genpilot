@@ -22,7 +22,7 @@ a = Agent(
     "You are an assistant to solve tasks, Before give a tool or function action, please give a assistant response to show your thought about it",
     tools=[wikipedia],
     permission=Permission.ALWAYS,
-    structured_output=False,  # no structured output isn't supported by BedRockClient,
+    structured_output=True,  # no structured output isn't supported by BedRockClient,
 )
 
 prompt = sys.argv[1]
