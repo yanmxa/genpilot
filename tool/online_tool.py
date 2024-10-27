@@ -6,7 +6,7 @@ load_dotenv()
 import httpx
 
 
-def wikipedia(q):
+def wikipedia(q: str) -> str:
     """
     Search Wikipedia using the Wikipedia API and return the first snippet of the search result.
 
@@ -29,4 +29,6 @@ def wikipedia(q):
             "format": "json",  # Return results in JSON format
         },
     )
+    if not response.json()["query"] or len(response.json()["query"]["search"]) == 0:
+        return "Result not found!"
     return response.json()["query"]["search"][0]["snippet"]

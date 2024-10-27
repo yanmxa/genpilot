@@ -2,7 +2,7 @@ import subprocess
 import traceback
 
 
-def execute_code(language, code):
+def execute_code(language: str, code: str):
     """
     Executes code based on the specified programming language.
 

@@ -40,7 +40,6 @@
   Frameworks like [MemGPT](https://memgpt.ai/) and [LangChain](https://www.langchain.com/) enable agents to memorize experiences. However, Zen-Agent leverages flexible tool integration to treat memory as a tool, allowing for easy decoupling and incorporation, thereby enhancing adaptability.
 
   > [MemGPT: Towards LLMs as Operating Systems](https://arxiv.org/pdf/2310.08560)
-
   > [CLIN: A CONTINUALLY LEARNING LANGUAGE AGENT FOR RAPID TASK ADAPTATION AND GENERALIZATION](https://arxiv.org/pdf/2310.10134)
 
 - **Event-Based Connection** [Planning]

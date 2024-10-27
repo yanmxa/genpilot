@@ -2,8 +2,20 @@ import boto3
 from botocore.exceptions import ClientError
 import os
 from rich.console import Console
+from openai.types.chat import (
+    ChatCompletionMessage,
+    ChatCompletionMessageParam,
+    ChatCompletionToolParam,
+    ChatCompletionMessageToolCall,
+    ChatCompletionToolMessageParam,
+)
+from openai.types import FunctionDefinition, FunctionParameters
+from openai.types.chat.chat_completion_message_tool_call import Function
+from typing import Iterable
+import rich
 
 from dotenv import load_dotenv
+import rich.json
 
 load_dotenv()
 
@@ -11,6 +23,7 @@ load_dotenv()
 console = Console()
 
 
+# We will not address compatibility between this SDK and the OpenAI SDK. For other client SDKs, we will use structured content to directly wrap the tools' information.
 class BedRockClient:
     def __init__(
         self, model_id, inference_config, price_per_1000_input, price_per_1000_output
@@ -30,20 +43,34 @@ class BedRockClient:
             aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
         )
 
-    def __call__(self, messages):
+    def __call__(
+        self,
+        messages: Iterable[ChatCompletionMessageParam],
+        tools: Iterable[ChatCompletionToolParam],
+    ):
         message_list = []
         for msg in messages:
-            content = [{"text": msg["content"]}]
-            if msg["role"] == "system":
-                system_message = content
+            if isinstance(msg, ChatCompletionMessage):
+                content = [{"text": msg.content}]
+                if msg.role == "system":
+                    system_message = content
+                else:
+                    message_list.append({"role": msg.role, "content": content})
             else:
-                message_list.append({"role": msg["role"], "content": content})
+                content = [{"text": msg["content"]}]
+                if msg["role"] == "system":
+                    system_message = content
+                else:
+                    message_list.append({"role": msg["role"], "content": content})
+
         response = self.client.converse(
             modelId=self.model_id,
             messages=message_list,
             system=system_message,
             inferenceConfig=self.inference_config,
+            # toolConfig={"tools": tool_list},
         )
+        # price
         usage = response["usage"]
         cost = calculate_llm_price(
             usage["inputTokens"],
@@ -53,7 +80,10 @@ class BedRockClient:
         )
         self.total_price += cost
         console.print(f"Total Cost: {self.total_price}", style="italic dim")
-        return response["output"]["message"]["content"][0]["text"]
+        return ChatCompletionMessage(
+            role="assistant",
+            content=response["output"]["message"]["content"][0]["text"],
+        )
 
 
 def calculate_llm_price(
