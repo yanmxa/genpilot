@@ -22,7 +22,7 @@
     model_client,
     "Assistant AI", "You are an assistant to solve tasks",
     tools=[wikipedia],
-  )
+  ).run()
   ```
 
 - **Governed Actions**
