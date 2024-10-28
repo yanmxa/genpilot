@@ -29,8 +29,7 @@ Note: Your response should include either the action, or the answer field — bu
   "thought": [
     "The user has requested extracting a zip file downloaded yesterday.",
     "Steps to solution are...",
-    "I will process step by step...",
-    "Analysis of step..."
+    "I will use ** tool fir the first step..."
   ],
   "action": {
     "name": "tool_name",
@@ -45,12 +44,11 @@ Note: Your response should include either the action, or the answer field — bu
 ```json
 {
   "thought": [
-    "The user has requested extracting a zip file downloaded yesterday.",
-    "Steps to solution are...",
-    "I will process step by step...",
-    "Analysis of step..."
+    "The user has asked when OpenAI was founded.",
+    "I retrieved the information using online sources such as Google and Wikipedia, up to the date yyyy-MM-dd.",
+    "Finally, I have the answer, which is..."
   ],
-  "answer": "the zip file is ..."
+  "answer": "OpenAI was founded in ... by ..."
 }
 ```
 
@@ -66,7 +64,13 @@ Note: Your response should include either the action, or the answer field — bu
 }
 ```
 
-Your response shouldn't contain "```json" and "```".
+Your response shouldn't contain "```json" and "```". And always try to make the "thought" field briefly and concisely!
+
+**Avoid making up information or getting stuck in loops**. In the following cases, simply state in the "answer" that no solution is available:
+
+- When the answer is unknown or cannot be determined from the provided information.
+
+- If you've used the same action/tool and parameters repeatedly, and the result remains semantically unchanged.
 
 ### Instruction
 

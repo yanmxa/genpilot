@@ -56,6 +56,7 @@ class Agent:
         self.structured_output = structured_output
 
         self._max_iter = 6
+        self._max_obs = 100  # max observation word size!
 
         # register the external func(modules) to the agent
         self._func_modules = {}
@@ -90,26 +91,23 @@ class Agent:
         while i < self._max_iter:
             if obs_status == StatusCode.ANSWER:
                 rich.get_console().print(f"✨ {obs_result} \n", style="bold green")
-                if self._add_user_prompt("🧘 [dim][red]Exit[/red] to quit[/dim]"):
-                    i = 0  # Reset iteration count for new input
+                if self._add_user_prompt(
+                    "🧘 [dim]Enter[/dim] [red]exit[/red][dim] or prompt[/dim]"
+                ):
+                    i = 0  # Reset iteration count for new input -> next
                 else:
                     break
-            elif obs_status == StatusCode.THOUGHT:
+            elif obs_status == StatusCode.THOUGHT:  # -> next
                 # TODO: add the thought, might be need add user prompt
-                assistant_message = self._add_assistant_message()
-                obs_status, obs_result = self._add_observation_message(
-                    assistant_message
-                )
                 rich.print()
-            elif obs_status == StatusCode.OBSERVATION:
-                rich.get_console().print(f"{obs_result}\n", style="italic dim")
-                assistant_message = self._add_assistant_message()
-                obs_status, obs_result = self._add_observation_message(
-                    assistant_message
-                )
+            elif obs_status == StatusCode.OBSERVATION:  # -> next
+                rich.print()
             else:  # StatusCode.ERROR, StatusCode.NONE, StatusCode.ACTION_FORBIDDEN
+                rich.print()
                 rich.get_console().print(f"{obs_result}", style="red")
                 return
+            assistant_message = self._add_assistant_message()
+            obs_status, obs_result = self._add_observation_message(assistant_message)
             i += 1
         if i == self._max_iter:
             rich.get_console().print(
@@ -120,7 +118,7 @@ class Agent:
         input = Prompt.ask(ask).strip().lower()
         print()
         if input in {"exit", "e"}:
-            rich.get_console().print("👋 [blue]Goodbye![/blue]\n")
+            rich.get_console().print("👋 [blue]Goodbye![/blue]")
             return False
         else:
             self._add_user_message(input)
@@ -189,13 +187,16 @@ class Agent:
                 globals()[func_module] = importlib.import_module(func_module)
             func_tool = getattr(sys.modules[func_module], func_name)
             observation = func_tool(**func_args)
+            rich.get_console().print(f"{observation}\n", style="italic dim")
 
             # append the tool response: observation
             self.messages.append(
-                ChatCompletionToolMessageParam(
-                    tool_call_id=func_tool_call_id,
-                    content=f"{observation}",
-                    role="tool",
+                self._validated_observation(
+                    ChatCompletionToolMessageParam(
+                        tool_call_id=func_tool_call_id,
+                        content=f"{observation}",
+                        role="tool",
+                    )
                 )
             )
             return StatusCode.OBSERVATION, observation
@@ -249,9 +250,13 @@ class Agent:
                     globals()[module_name] = importlib.import_module(module_name)
                 func = getattr(sys.modules[module_name], func_name)
                 observation = func(**func_args)
+                rich.get_console().print(f"{observation}\n", style="italic dim")
+
                 self.messages.append(
-                    ChatCompletionUserMessageParam(
-                        role="user", content=f"{observation}"
+                    self._validated_observation(
+                        ChatCompletionUserMessageParam(
+                            role="user", content=f"{observation}"
+                        )
                     )
                 )
                 return StatusCode.OBSERVATION, f"{observation}"
@@ -278,6 +283,27 @@ class Agent:
             )
         except Exception as e:
             return StatusCode.ERROR, f"{content}\n An structured error occurred: {e}"
+
+    def _validated_observation(
+        self, obs: ChatCompletionMessageParam
+    ) -> ChatCompletionMessageParam:
+        if len(obs.get("content")) > self._max_obs:
+            input = (
+                Prompt.ask(
+                    "🤔 [dim]Enter[/dim] [green]o[/green]kay, [green]s[/green]hort[dim] or prompt[/dim]"
+                )
+                .strip()
+                .lower()
+            )
+            if input in ["o", "okay"]:
+                return obs
+            elif input in ["s", "short"]:
+                return ChatCompletionUserMessageParam(
+                    role="user",
+                    content="Observation too large to display, but successful—continue to the next step!",
+                )
+            else:
+                return ChatCompletionUserMessageParam(role="user", content=f"{input}")
 
     def _tool_markdown(self, tools) -> str:
         system_tool_content = ["## Available Tools:\n"]

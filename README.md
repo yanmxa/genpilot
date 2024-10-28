@@ -42,6 +42,8 @@
   > [MemGPT: Towards LLMs as Operating Systems](https://arxiv.org/pdf/2310.08560)
   > [CLIN: A CONTINUALLY LEARNING LANGUAGE AGENT FOR RAPID TASK ADAPTATION AND GENERALIZATION](https://arxiv.org/pdf/2310.10134)
 
+  - History, and Summary
+
 - **Event-Based Connection** [Planning]
 
   Facilitates event-driven coordination for multi-agent interactions.

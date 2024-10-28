@@ -79,7 +79,7 @@ class BedRockClient:
             self.price_per_1000_output,
         )
         self.total_price += cost
-        console.print(f"Total Cost: {self.total_price}", style="italic dim")
+        console.print(f"💵 [dim]{self.total_price}[/dim]")
         return ChatCompletionMessage(
             role="assistant",
             content=response["output"]["message"]["content"][0]["text"],
