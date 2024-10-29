@@ -2,6 +2,7 @@ from enum import Enum
 
 
 class StatusCode(Enum):
+    ACTION = 400
     ANSWER = 401
     THOUGHT = 403
     OBSERVATION = 405

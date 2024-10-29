@@ -14,8 +14,13 @@ def execute_code(language: str, code: str):
         str: The result of the code execution or an error message.
 
     Example:
+
         # Python example
-        python_code = "def greet():\n    return 'Hello from Python!'\nresult = greet()"
+        python_code = "
+        def greet():
+            return 'Hello from Python!'
+        result = greet()
+        "
         print(execute_code('python', python_code))
 
         # Bash example

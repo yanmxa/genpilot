@@ -2,9 +2,9 @@ import os
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from tool import execute_code, Permission
+from agent import PromptAgent
 from client import BedRockClient, GroqClient
-from tool import wikipedia, Permission
-from agent import Agent
 
 
 def llama32_90b_client():
@@ -16,13 +16,12 @@ def llama32_90b_client():
     )
 
 
-a = Agent(
-    GroqClient(),
+a = PromptAgent(
+    llama32_90b_client(),
     "Assistant AI",
-    "You are an assistant to solve tasks, Before give a tool or function action, please give a assistant response to show your thought about it",
-    tools=[wikipedia],
+    "You are an assistant to solve tasks. You can use the code executor write python code to do that",
+    tools=[execute_code],
     permission=Permission.ALWAYS,
-    structured_output=True,  # no structured output isn't supported by BedRockClient,
 )
 
 prompt = sys.argv[1]

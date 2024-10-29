@@ -16,7 +16,7 @@ class ChatMemory(ABC):
         pass
 
     @abstractmethod
-    def add(self, ChatCompletionMessageParam):
+    def add(self, message: ChatCompletionMessageParam, round_end: bool = False):
         pass
 
     @abstractmethod
