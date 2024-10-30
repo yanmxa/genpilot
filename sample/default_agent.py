@@ -3,7 +3,7 @@ import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from client import BedRockClient, GroqClient
-from tool import wikipedia, execute_code, Permission
+from tool import wikipedia, execute_code, ActionPermission
 from agent import DefaultAgent
 
 
@@ -21,8 +21,8 @@ a = DefaultAgent(
     "Assistant AI",
     "You are an assistant to solve tasks, Before give a tool or function action, please give a assistant response to show your thought about it",
     tools=[wikipedia, execute_code],
-    permission=Permission.ALWAYS,
 )
 
 prompt = sys.argv[1]
-a.run(prompt)
+
+print(a.run(prompt))

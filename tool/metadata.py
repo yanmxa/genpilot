@@ -1,5 +1,6 @@
 import ast
 import inspect
+import datetime
 import typing
 
 from openai.types.chat import (
@@ -121,3 +122,13 @@ def function_to_schema(func):
             schema["parameters"]["required"].append(param_name)
 
     return schema
+
+
+def build_from_template(file, mapping) -> str:
+    with open(file, "r") as f:
+        message = f.read()
+    replacements = {"{{time}}": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+    replacements.update(mapping)
+    for placeholder, value in replacements.items():
+        message = message.replace(placeholder, value)
+    return message

@@ -2,7 +2,7 @@ import os
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from tool import execute_code, Permission
+from tool import execute_code, ActionPermission
 from agent import PromptAgent
 from client import BedRockClient, GroqClient
 
@@ -21,8 +21,7 @@ a = PromptAgent(
     "Assistant AI",
     "You are an assistant to solve tasks. You can use the code executor write python code to do that",
     tools=[execute_code],
-    permission=Permission.ALWAYS,
 )
 
 prompt = sys.argv[1]
-a.run(prompt)
+print(a.run(prompt))

@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Permission(Enum):
+class ActionPermission(Enum):
     AUTO = "auto"
     ALWAYS = "always"
     NONE = "none"

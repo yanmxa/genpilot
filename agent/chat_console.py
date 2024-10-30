@@ -8,26 +8,27 @@ import rich.rule
 from rich.prompt import Prompt
 from rich.syntax import Syntax
 from rich.markdown import Markdown
+from rich.text import Text
 
-from tool import Permission
+from tool import ActionPermission
 
 console = rich.get_console()
 
 
-class ConsoleAgent:
+class ChatConsole:
     def __init__(self, name="AgentConsole"):
         self.name = name
 
     def system(self, str) -> None:
-        # pass
-        console.print(Markdown(str))
+        # console.print(Markdown(str))
+        pass
 
     def thinking(self, messages):
         console.rule("🤖", characters="~", style="dim")
         # console.print(messages)
 
     def observation(self, message):
-        console.print(f"{message} \n", style="italic dim")
+        console.print(f"{message}\n", style="italic dim")
 
     def check_observation(self, obs: ChatCompletionMessageParam, max_size):
         if len(obs.get("content")) > max_size:
@@ -48,34 +49,24 @@ class ConsoleAgent:
             else:
                 return ChatCompletionUserMessageParam(role="user", content=f"{input}")
 
-    def answer(self, result) -> str:
+    def ask_input(self) -> str:
+        input = (
+            Prompt.ask("🧘 [dim]Enter[/dim] [red]exit[/red][dim] or prompt[/dim]")
+            .strip()
+            .lower()
+        )
+        print()
+        if input in {"exit", "e"}:
+            console.print("👋 [blue]Goodbye![/blue] \n")
+            return None
+        else:
+            return input
+
+    def answer(self, result):
         console.print(f"✨ {result} \n", style="bold green")
 
-        input = (
-            Prompt.ask("🧘 [dim]Enter[/dim] [red]exit[/red][dim] or prompt[/dim]")
-            .strip()
-            .lower()
-        )
-        print()
-        if input in {"exit", "e"}:
-            console.print("👋 [blue]Goodbye![/blue] \n")
-            return None
-        else:
-            return input
-
-    def thought(self, result) -> str:
+    def thought(self, result):
         console.print(f"💭 {result} \n", style="blue")
-        input = (
-            Prompt.ask("🧘 [dim]Enter[/dim] [red]exit[/red][dim] or prompt[/dim]")
-            .strip()
-            .lower()
-        )
-        print()
-        if input in {"exit", "e"}:
-            console.print("👋 [blue]Goodbye![/blue] \n")
-            return None
-        else:
-            return input
 
     def error(self, message):
         console.print(f"🐞 {message} \n", style="red")
@@ -97,11 +88,11 @@ class ConsoleAgent:
             rich.print()
             tool_info = f"🛠  [yellow]{func_args['language']}[/yellow]"
 
-        if permission == Permission.NONE:
+        if permission == ActionPermission.NONE:
             console.print(tool_info)
             return True
 
-        if permission == Permission.AUTO and func_edit == 0:  # enable auto
+        if permission == ActionPermission.AUTO and func_edit == 0:  # enable auto
             console.print(tool_info)
             return True
 
