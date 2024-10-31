@@ -6,7 +6,7 @@ from .chat_memory import ChatMemory
 
 
 class ChatBufferedMemory(ChatMemory):
-    def __init__(self, memory_id: str, size=3):
+    def __init__(self, memory_id="", size=3):
         self._memory_id = memory_id
         self._messages: List[ChatCompletionMessageParam] = []
         self._size = size

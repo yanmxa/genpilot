@@ -36,7 +36,6 @@ class Agent(ABC):
         system,
         tools,
         client,
-        standalone: bool = True,
         action_permission: ActionPermission = ActionPermission.ALWAYS,
         memory: ChatMemory = None,
         chat_console: ChatConsole = ChatConsole(),
@@ -52,7 +51,7 @@ class Agent(ABC):
         # the tools for model
         self._tools: List[ChatCompletionToolParam] = self.completion_chat_tools(tools)
 
-        self._standalone = standalone
+        self._standalone = True
         self._action_permission = action_permission
         self._memory = memory
         self._console = chat_console
@@ -110,6 +109,8 @@ class Agent(ABC):
     async def run(
         self, message: Union[ChatCompletionMessageParam, str]
     ) -> ChatCompletionAssistantMessageParam | None:
+        if not isinstance(message, str):
+            self._standalone = False
         self._add_user_message(message)
         assistant_message = await self._thinking()
         obs_status, obs_result = await self._action_observation(assistant_message)
@@ -117,12 +118,12 @@ class Agent(ABC):
         while i < self._max_iter:
             if obs_status == StatusCode.ANSWER:  # return, input or thinking
                 if not self._standalone:
-                    self._memory.clear()
+                    # self._memory.clear()
                     return ChatCompletionAssistantMessageParam(
                         name=self._name, content=obs_result, role="assistant"
                     )
                 self._console.answer(obs_result)
-                next_input = self._console.ask_input()
+                next_input = self._console.ask_input(self._memory.get())
                 if next_input:
                     self._add_user_message(next_input)
                     i = 0
@@ -187,7 +188,7 @@ class Agent(ABC):
                 # if chat_message.content.startswith(FINAL_ANSWER):
                 return (
                     StatusCode.ANSWER,
-                    chat_message.content.removeprefix(FINAL_ANSWER),
+                    chat_message.content.replace(FINAL_ANSWER, "").strip(),
                 )
             else:
                 return (StatusCode.THOUGHT, chat_message.content)

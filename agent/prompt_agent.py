@@ -34,7 +34,6 @@ class PromptAgent(Agent):
         name,
         system,
         tools=[],
-        standalone=True,
         max_iter=6,
     ):
         system = build_from_template(
@@ -45,7 +44,7 @@ class PromptAgent(Agent):
             },
         )
         system += self._tool_markdown(tools)
-        super().__init__(name, system, tools, client, standalone, max_iter=max_iter)
+        super().__init__(name, system, tools, client, max_iter=max_iter)
 
     def _tool_markdown(self, tools) -> str:
         system_tool_content = ["## Available Tools:\n"]

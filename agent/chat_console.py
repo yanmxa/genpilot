@@ -28,16 +28,30 @@ class ChatConsole:
         # console.print(Markdown(str))
         pass
 
+    # def delivery(self, agent_a, agent_b, message):
+    #     title = f"📨 [bold yellow]{agent_a}[/bold yellow] [cyan]→[/cyan] [bold magenta]{agent_b}[/bold magenta]"
+    #     chat_console.print()
+    #     panel = Panel(
+    #         f"[green]{message}[/green]",
+    #         title=title,
+    #         # subtitle=message,
+    #         title_align="left",
+    #         padding=(1, 2),
+    #     )
+    #     chat_console.print(panel)
+
     def delivery(self, agent_a, agent_b, message):
-        title = f"📨 [bold yellow]{agent_a}[/bold yellow] [cyan]→[/cyan] [bold magenta]{agent_b}[/bold magenta]"
+        title = f"📨 [bold bright_yellow]{agent_a}[/bold bright_yellow] [bright_cyan]→[/bright_cyan] [bold bright_magenta]{agent_b}[/bold bright_magenta]"
         chat_console.print()
+
         panel = Panel(
-            f"[green]{message}[/green]",
+            f"[dim white]{message}[/dim white]",
             title=title,
-            # subtitle=message,
             title_align="left",
             padding=(1, 2),
+            border_style="bright_black",  # A softer border color
         )
+
         chat_console.print(panel)
 
     def thinking(self, messages):
@@ -90,7 +104,7 @@ class ChatConsole:
                 return ChatCompletionUserMessageParam(role="user", content=f"{input}")
         return obs
 
-    def ask_input(self) -> str:
+    def ask_input(self, messages=None) -> str:
         input = (
             Prompt.ask("🧘 [dim]Enter[/dim] [red]exit[/red][dim] or prompt[/dim]")
             .strip()
@@ -100,11 +114,14 @@ class ChatConsole:
         if input in {"exit", "e"}:
             chat_console.print("👋 [blue]Goodbye![/blue]")
             return None
+        elif input == "debug":
+            chat_console.print(messages)
         else:
             return input
 
     def answer(self, result):
-        chat_console.print(f"✨ {result.strip()} \n", style="bold green")
+        result = result.strip()
+        chat_console.print(f"✨ {result} \n", style="bold green")
 
     def thought(self, result):
         chat_console.print(f"💭 {result} \n", style="blue")

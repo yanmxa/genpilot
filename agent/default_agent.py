@@ -18,7 +18,6 @@ class DefaultAgent(Agent):
         name,
         description,
         tools=[],
-        standalone=True,
     ):
         system = build_from_template(
             os.path.join(current_dir, "..", "prompt", "default_agent.md"),
@@ -33,6 +32,5 @@ class DefaultAgent(Agent):
             system,
             tools,
             client,
-            standalone,
             memory=ChatBufferedMemory(6),
         )

@@ -29,7 +29,6 @@ weather_observer = PromptAgent(
     client=llama32_90b_client(),
     system=f"""Your role focuses on retrieving and analyzing current weather conditions for a specified city. Your Responsibilities: 1. Use the weather tool to find temperature, and other relevant weather data. 2. Provide updates on weather changes and forecasts.""",
     tools=[get_weather],
-    standalone=False,
 )
 
 
@@ -38,7 +37,6 @@ advisor = PromptAgent(
     name="Local Advisor",
     system=f"""Your role specializes in understanding local fashion trends and cultural influences to recommend suitable clothing.""",
     tools=[],
-    standalone=False,
 )
 
 
@@ -57,7 +55,6 @@ traveller = PromptAgent(
     name="Traveller",
     system=f"""This managerial role combines insights from both the Weather Observer and the Fashion and Culture Advisor to recommend appropriate clothing choices. Your response should be brief and to the point""",
     tools=[transfer_to_weather_observer, transfer_to_local_advisor],
-    standalone=True,
     max_iter=30,
 )
 
