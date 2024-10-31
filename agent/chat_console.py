@@ -16,6 +16,7 @@ import asyncio
 from type import ActionPermission
 from rich.console import Console
 
+
 chat_console = rich.get_console()
 
 
@@ -47,13 +48,8 @@ class ChatConsole:
         with Progress(SpinnerColumn(), console=Console(), transient=True) as progress:
             building_task = progress.add_task("LLM thinking", total=None)
             while not finished_event.is_set():
-                # console.clear()
                 elapsed_time = progress.tasks[building_task].elapsed
-                # chat_console.print(f"\r[dim] [+] Thinking {elapsed_time:.2f}s", end="")
-                # progress.update(
-                #     building_task, description=f"[dim][🤖] Thinking {elapsed_time:.2f}s"
-                # )
-                await asyncio.sleep(0.1)  # Update every second
+                await asyncio.sleep(0.1)
                 progress.advance(building_task)  # Advance the spinner
         # console.print(messages)
         chat_console.print(
@@ -63,14 +59,18 @@ class ChatConsole:
 
     def price(self, value):
         if value:
-            clear_previous_line()
+            clear_previous_lines()
             chat_console.print(f"[dim][$] {value}")
 
     def observation(self, message):
-        chat_console.print(f"{message}\n", style="italic dim")
+        text = Text(f"{message}")
+        text.stylize("dim")
+        chat_console.print(text)
+        # chat_console.print(f"{message}", style="italic dim")
 
     def check_observation(self, obs: ChatCompletionMessageParam, max_size):
         if len(obs.get("content")) > max_size:
+            chat_console.print()
             input = (
                 Prompt.ask(
                     "🤔 [dim]Enter[/dim] [green]o[/green]kay, [green]s[/green]hort[dim] or prompt[/dim]"
@@ -78,7 +78,7 @@ class ChatConsole:
                 .strip()
                 .lower()
             )
-            clear_previous_line()
+            clear_previous_lines(2)
             if input in ["o", "okay"]:
                 return obs
             elif input in ["s", "short"]:
@@ -97,7 +97,7 @@ class ChatConsole:
         )
         print()
         if input in {"exit", "e"}:
-            chat_console.print("👋 [blue]Goodbye![/blue] \n")
+            chat_console.print("👋 [blue]Goodbye![/blue]")
             return None
         else:
             return input
@@ -152,7 +152,8 @@ class ChatConsole:
                 )
 
 
-def clear_previous_line():
-    sys.stdout.write("\033[F")  # Move the cursor up one line
-    sys.stdout.write("\033[K")  # Clear the line
+def clear_previous_lines(n=1):
+    for _ in range(n):
+        sys.stdout.write("\033[F")  # Move the cursor up one line
+        sys.stdout.write("\033[K")  # Clear the line
     sys.stdout.flush()

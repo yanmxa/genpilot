@@ -16,7 +16,7 @@ from openai.types.chat import (
 )
 from type import ChatMessage, StatusCode
 from tool import func_metadata, build_from_template
-from .chat_agent import ChatAgent
+from .chat_agent import Agent
 import traceback
 
 
@@ -25,7 +25,7 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 console = rich.get_console()
 
 
-class PromptAgent(ChatAgent):
+class PromptAgent(Agent):
 
     def __init__(
         self,

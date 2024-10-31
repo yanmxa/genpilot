@@ -1,7 +1,5 @@
 import os
-import sys
 import json
-import importlib
 import asyncio
 
 from abc import ABC, abstractmethod
@@ -30,7 +28,7 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 FINAL_ANSWER = "ANSWER:"
 
 
-class ChatAgent(ABC):
+class Agent(ABC):
 
     def __init__(
         self,
@@ -44,6 +42,7 @@ class ChatAgent(ABC):
         chat_console: ChatConsole = ChatConsole(),
         max_iter=6,
         max_obs=200,  # max observation content!
+        is_terminal=(lambda content: content is not None and FINAL_ANSWER in content),
     ):
         self._name = name
         self._client = client
@@ -59,6 +58,7 @@ class ChatAgent(ABC):
         self._console = chat_console
         self._max_iter = max_iter
         self._max_obs = max_obs
+        self._is_terminal = is_terminal
 
         self._console.system(self._system)
 
@@ -181,7 +181,8 @@ class ChatAgent(ABC):
                     return status, observation
             return StatusCode.OBSERVATION, "all tool calls were successful!"
         elif chat_message.content:
-            if chat_message.content.startswith(FINAL_ANSWER):
+            if self._is_terminal(chat_message.content):
+                # if chat_message.content.startswith(FINAL_ANSWER):
                 return (
                     StatusCode.ANSWER,
                     chat_message.content.removeprefix(FINAL_ANSWER),
@@ -199,8 +200,8 @@ class ChatAgent(ABC):
         observation = self._functions[func_name](**func_args)
 
         # The agent autonomously handles handoffs. https://cookbook.openai.com/examples/orchestrating_agents#executing-routines
-        if isinstance(observation, ChatAgent):
-            agent: ChatAgent = observation
+        if isinstance(observation, Agent):
+            agent: Agent = observation
             task: str = func_args["message"]
 
             # self._console.delivery(self.name, agent.name, task)

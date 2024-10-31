@@ -1,7 +1,7 @@
 from typing import Union, Tuple, List
 import os
 from tool import build_from_template
-from .chat_agent import ChatAgent
+from .chat_agent import Agent
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 
@@ -9,7 +9,7 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 FINAL_ANSWER = "ANSWER:"
 
 
-class DefaultAgent(ChatAgent):
+class DefaultAgent(Agent):
 
     def __init__(
         self,
