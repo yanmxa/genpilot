@@ -33,9 +33,11 @@
   - **`always`**: Requests permission for every action.  
   - **`none`**: Never requests permission.  
 
-- **Multi Agent**
+- **Multi-Agent System**
 
-  You can easily switch the zen-agent into a multi-agent system. The Handoffs workflow for orchestrating agents is inspeared by this [post](https://cookbook.openai.com/examples/orchestrating_agents#executing-routines). Which is how to Swarm works. 
+  Transitioning the zen-agent into a multi-agent system a straightforward process. The handoff workflow for orchestrating agents draws inspiration from the post [Routines and Handoffs](https://cookbook.openai.com/examples/orchestrating_agents#executing-routines), which details the functionality of the [Swarm](https://github.com/openai/swarm) project. We strive to achieve a harmonious balance, enabling you to create a single agent for specific tasks while effortlessly evolving towards a sophisticated multi-agent framework.
+
+  This demo provides advice on what to wear when traveling to a city: [![asciicast](https://asciinema.org/a/686664.svg)](https://asciinema.org/a/686664).
 
 - **Memory** [Planning]  
 
@@ -46,4 +48,3 @@
   > [MemGPT: Towards LLMs as Operating Systems](https://arxiv.org/pdf/2310.08560)
   > [CLIN: A CONTINUALLY LEARNING LANGUAGE AGENT FOR RAPID TASK ADAPTATION AND GENERALIZATION](https://arxiv.org/pdf/2310.10134)
 
-  - History, and Summary

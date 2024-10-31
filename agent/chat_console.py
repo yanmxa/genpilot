@@ -32,7 +32,7 @@ class ChatConsole:
         title = f"📨 [bold yellow]{agent_a}[/bold yellow] [cyan]→[/cyan] [bold magenta]{agent_b}[/bold magenta]"
         chat_console.print()
         panel = Panel(
-            f"{message}",
+            f"[green]{message}[/green]",
             title=title,
             # subtitle=message,
             title_align="left",
@@ -51,7 +51,7 @@ class ChatConsole:
                 elapsed_time = progress.tasks[building_task].elapsed
                 await asyncio.sleep(0.1)
                 progress.advance(building_task)  # Advance the spinner
-        # console.print(messages)
+        # chat_console.print(messages)
         chat_console.print(
             f"[dim][+] Thinking {progress.tasks[building_task].elapsed:.2f}s"
         )
@@ -88,6 +88,7 @@ class ChatConsole:
                 )
             else:
                 return ChatCompletionUserMessageParam(role="user", content=f"{input}")
+        return obs
 
     def ask_input(self) -> str:
         input = (

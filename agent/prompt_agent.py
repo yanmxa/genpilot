@@ -18,6 +18,7 @@ from type import ChatMessage, StatusCode
 from tool import func_metadata, build_from_template
 from .chat_agent import Agent
 import traceback
+from memory.chat_buffered_memory import ChatBufferedMemory
 
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -34,6 +35,7 @@ class PromptAgent(Agent):
         system,
         tools=[],
         standalone=True,
+        max_iter=6,
     ):
         system = build_from_template(
             os.path.join(current_dir, "..", "prompt", "prompt_agent.md"),
@@ -43,13 +45,7 @@ class PromptAgent(Agent):
             },
         )
         system += self._tool_markdown(tools)
-        super().__init__(
-            name,
-            system,
-            tools,
-            client,
-            standalone,
-        )
+        super().__init__(name, system, tools, client, standalone, max_iter=max_iter)
 
     def _tool_markdown(self, tools) -> str:
         system_tool_content = ["## Available Tools:\n"]

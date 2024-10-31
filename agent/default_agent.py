@@ -1,6 +1,7 @@
 from typing import Union, Tuple, List
 import os
 from tool import build_from_template
+from memory.chat_buffered_memory import ChatBufferedMemory
 from .chat_agent import Agent
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -33,4 +34,5 @@ class DefaultAgent(Agent):
             tools,
             client,
             standalone,
+            memory=ChatBufferedMemory(6),
         )

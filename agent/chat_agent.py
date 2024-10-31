@@ -38,7 +38,7 @@ class Agent(ABC):
         client,
         standalone: bool = True,
         action_permission: ActionPermission = ActionPermission.ALWAYS,
-        memory: ChatMemory = ChatBufferedMemory(5),
+        memory: ChatMemory = None,
         chat_console: ChatConsole = ChatConsole(),
         max_iter=6,
         max_obs=200,  # max observation content!
@@ -60,6 +60,8 @@ class Agent(ABC):
         self._max_obs = max_obs
         self._is_terminal = is_terminal
 
+        if self._memory is None:
+            self._memory = ChatBufferedMemory(6)
         self._console.system(self._system)
 
     @property
@@ -114,12 +116,12 @@ class Agent(ABC):
         i = 0
         while i < self._max_iter:
             if obs_status == StatusCode.ANSWER:  # return, input or thinking
-                self._console.answer(obs_result)
                 if not self._standalone:
                     self._memory.clear()
                     return ChatCompletionAssistantMessageParam(
                         name=self._name, content=obs_result, role="assistant"
                     )
+                self._console.answer(obs_result)
                 next_input = self._console.ask_input()
                 if next_input:
                     self._add_user_message(next_input)
@@ -168,14 +170,14 @@ class Agent(ABC):
                 status, observation = await self._observation(func_name, func_args)
                 if status == StatusCode.OBSERVATION:
                     # append the tool response: observation
-                    too_observation = ChatCompletionToolMessageParam(
+                    tool_observation = ChatCompletionToolMessageParam(
                         tool_call_id=tool_call.id,
                         # tool_name=tool_call.function.name, # tool name is not supported by groq client now
                         content=f"{observation}",
                         role="tool",
                     )
                     self._memory.add(
-                        self._console.check_observation(too_observation, self._max_obs)
+                        self._console.check_observation(tool_observation, self._max_obs)
                     )
                 else:
                     return status, observation
@@ -207,8 +209,9 @@ class Agent(ABC):
             # self._console.delivery(self.name, agent.name, task)
             ret: ChatCompletionAssistantMessageParam = await agent.run(
                 ChatCompletionUserMessageParam(
-                    role="user", content=task, name=agent.name
+                    role="user", content=task, name=self.name
                 )
+                # ChatCompletionUserMessageParam(role="user", content=task)
             )
             if not ret:
                 return (
