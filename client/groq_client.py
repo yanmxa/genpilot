@@ -40,4 +40,4 @@ class GroqClient:
             tools=tools,
             # response_format=ResponseFormat, #TODO: the llama api current doesn't support structured output
         )
-        return chat_completion.choices[0].message
+        return chat_completion.choices[0].message, ""

@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import importlib
+import asyncio
 
 from abc import ABC, abstractmethod
 from typing import Union, Tuple, List
@@ -14,6 +15,7 @@ from openai.types.chat import (
     ChatCompletionUserMessageParam,
     ChatCompletionToolMessageParam,
     ChatCompletionAssistantMessageParam,
+    ChatCompletionMessageToolCall,
 )
 
 from tool import (
@@ -43,11 +45,11 @@ class ChatAgent(ABC):
         max_iter=6,
         max_obs=200,  # max observation content!
     ):
-        self.name = name
+        self._name = name
         self._client = client
         self._system = system
         # registered the tools for the agent to be invoked
-        self._functions = self._register_tools(tools)
+        self._functions = self.register_actions(tools)
         # the tools for model
         self._tools: List[ChatCompletionToolParam] = self.completion_chat_tools(tools)
 
@@ -60,24 +62,19 @@ class ChatAgent(ABC):
 
         self._console.system(self._system)
 
-    def _register_tools(self, tools):
+    @property
+    def name(self):
+        return self._name
+
+    def register_actions(self, tools):
         # register the external func(modules) to the agent
-        functions = {}
-        for tool in tools:
-            func_name, func_module = tool_name(tool)
-            functions[func_name] = func_module
-        return functions
+        return {tool.__name__: tool for tool in tools}
 
     def completion_chat_tools(self, tools) -> List[ChatCompletionToolParam]:
-        # parse the tools to chat functions
-        func_tools = []
-        for tool in tools:
-            # https://github.com/openai/openai-python/blob/main/src/openai/types/chat/completion_create_params.py#L251
-            _, _, chat_completion_tool = chat_tool(tool)
-            func_tools.append(chat_completion_tool)
-        return func_tools
+        # https://github.com/openai/openai-python/blob/main/src/openai/types/chat/completion_create_params.py#L251
+        return [chat_tool(tool) for tool in tools]
 
-    def _thinking(self) -> ChatCompletionMessage:
+    async def _thinking(self) -> ChatCompletionMessage:
         new_messages = [
             ChatCompletionSystemMessageParam(
                 role="system",
@@ -87,24 +84,42 @@ class ChatAgent(ABC):
         memory_messages = self._memory.get()
         for message in memory_messages:
             new_messages.append(message)
-        self._console.thinking(new_messages)
-        assistant_message: ChatCompletionMessage = self._client(
-            new_messages, self._tools
+
+        finished_event = asyncio.Event()
+        model_thinking_task = asyncio.create_task(
+            self.async_wrapper_client(new_messages, self._tools)
         )
+        console_thinking_task = asyncio.create_task(
+            self._console.async_thinking(new_messages, finished_event)
+        )
+
+        assistant_message, price = await model_thinking_task
+        finished_event.set()
+        await console_thinking_task
+        self._console.price(price)
+
+        # self._console.thinking()
+        # assistant_message: ChatCompletionMessage = self._client(
+        #     new_messages, self._tools
+        # )
         self._memory.add(assistant_message)
         return assistant_message
 
-    def run(self, message: Union[ChatCompletionMessageParam, str]):
+    async def run(
+        self, message: Union[ChatCompletionMessageParam, str]
+    ) -> ChatCompletionAssistantMessageParam | None:
         self._add_user_message(message)
-        assistant_message = self._thinking()
-        obs_status, obs_result = self._action_observation(assistant_message)
+        assistant_message = await self._thinking()
+        obs_status, obs_result = await self._action_observation(assistant_message)
         i = 0
         while i < self._max_iter:
             if obs_status == StatusCode.ANSWER:  # return, input or thinking
                 self._console.answer(obs_result)
                 if not self._standalone:
                     self._memory.clear()
-                    return obs_result
+                    return ChatCompletionAssistantMessageParam(
+                        name=self._name, content=obs_result, role="assistant"
+                    )
                 next_input = self._console.ask_input()
                 if next_input:
                     self._add_user_message(next_input)
@@ -125,57 +140,46 @@ class ChatAgent(ABC):
             else:  # StatusCode.ERROR, StatusCode.NONE       # return None
                 self._console.error(obs_result)
                 return
-            assistant_message = self._thinking()
-            obs_status, obs_result = self._action_observation(assistant_message)
+            assistant_message = await self._thinking()
+            obs_status, obs_result = await self._action_observation(assistant_message)
             i += 1
         if i == self._max_iter:
             self._console.overload(self._max_iter)
 
-    def _action_observation(
+    async def _action_observation(
         self, chat_message: ChatCompletionMessage
     ) -> Tuple[StatusCode, str]:
         if chat_message.tool_calls:
-            tool = chat_message.tool_calls[0]
-            func_name = tool.function.name
-            func_args = tool.function.arguments
-            if isinstance(func_args, str):
-                func_args = json.loads(tool.function.arguments)
-            func_tool_call_id = tool.id
+            for tool_call in chat_message.tool_calls:
+                func_name = tool_call.function.name
+                func_args = tool_call.function.arguments
+                if isinstance(func_args, str):
+                    func_args = json.loads(tool_call.function.arguments)
 
-            # validate the tool
-            if not func_name in self._functions:
-                return (
-                    StatusCode.ERROR,
-                    f"The [yellow]{func_name}[/yellow] isn't registered!",
-                )
+                # validate the tool
+                if not func_name in self._functions:
+                    return StatusCode.ERROR, f"The '{func_name}' isn't registered!"
 
-            # call tool: not all -> exit
-            if not self._console.check_action(
-                self._action_permission, func_name, func_args
-            ):
-                return StatusCode.ACTION_FORBIDDEN, "Action cancelled by the user."
+                if not self._console.check_action(
+                    self._action_permission, func_name, func_args
+                ):
+                    return StatusCode.ACTION_FORBIDDEN, "Action cancelled by the user."
 
-            # invoke function
-            func_module = self._functions[func_name]
-            if func_module not in globals():
-                globals()[func_module] = importlib.import_module(func_module)
-            func_tool = getattr(sys.modules[func_module], func_name)
-            observation = func_tool(**func_args)
-
-            self._console.observation(observation)
-
-            # append the tool response: observation
-            self._memory.add(
-                self._console.check_observation(
-                    ChatCompletionToolMessageParam(
-                        tool_call_id=func_tool_call_id,
+                status, observation = await self._observation(func_name, func_args)
+                if status == StatusCode.OBSERVATION:
+                    # append the tool response: observation
+                    too_observation = ChatCompletionToolMessageParam(
+                        tool_call_id=tool_call.id,
+                        # tool_name=tool_call.function.name, # tool name is not supported by groq client now
                         content=f"{observation}",
                         role="tool",
-                    ),
-                    self._max_obs,
-                )
-            )
-            return StatusCode.OBSERVATION, observation
+                    )
+                    self._memory.add(
+                        self._console.check_observation(too_observation, self._max_obs)
+                    )
+                else:
+                    return status, observation
+            return StatusCode.OBSERVATION, "all tool calls were successful!"
         elif chat_message.content:
             if chat_message.content.startswith(FINAL_ANSWER):
                 return (
@@ -190,11 +194,43 @@ class ChatAgent(ABC):
                 f"Invalid response message: {chat_message}",
             )
 
+    async def _observation(self, func_name, func_args) -> Tuple[StatusCode, str]:
+        # invoke function
+        observation = self._functions[func_name](**func_args)
+
+        # The agent autonomously handles handoffs. https://cookbook.openai.com/examples/orchestrating_agents#executing-routines
+        if isinstance(observation, ChatAgent):
+            agent: ChatAgent = observation
+            task: str = func_args["message"]
+
+            # self._console.delivery(self.name, agent.name, task)
+            ret: ChatCompletionAssistantMessageParam = await agent.run(
+                ChatCompletionUserMessageParam(
+                    role="user", content=task, name=agent.name
+                )
+            )
+            if not ret:
+                return (
+                    StatusCode.ERROR,
+                    f"Agent({agent.name}) failed to response: {task}",
+                )
+            observation = ret.get("content")
+            self._console.delivery(agent.name, self.name, observation)
+        else:  # default
+            self._console.observation(observation)
+
+        return StatusCode.OBSERVATION, observation
+
+    async def async_wrapper_client(self, messages, tools):
+        return await asyncio.to_thread(self._client, messages, tools)
+
     # https://github.com/openai/openai-python/blob/main/src/openai/types/chat/chat_completion_message_param.py
     # https://github.com/openai/openai-python/blob/main/src/openai/types/chat/chat_completion_tool_param.py
     # https://platform.openai.com/docs/guides/function-calling
-
     def _add_user_message(self, message: Union[ChatCompletionUserMessageParam, str]):
         if isinstance(message, str):
             message = ChatCompletionUserMessageParam(content=message, role="user")
+        self._console.delivery(
+            message.get("name", "user"), self.name, message.get("content")
+        )
         self._memory.add(message)

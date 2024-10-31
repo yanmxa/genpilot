@@ -1,3 +1,4 @@
+import sys
 from typing import List
 from openai.types.chat import (
     ChatCompletionMessageParam,
@@ -9,10 +10,13 @@ from rich.prompt import Prompt
 from rich.syntax import Syntax
 from rich.markdown import Markdown
 from rich.text import Text
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn
+import asyncio
+from type import ActionPermission
+from rich.console import Console
 
-from tool import ActionPermission
-
-console = rich.get_console()
+chat_console = rich.get_console()
 
 
 class ChatConsole:
@@ -23,12 +27,47 @@ class ChatConsole:
         # console.print(Markdown(str))
         pass
 
+    def delivery(self, agent_a, agent_b, message):
+        title = f"📨 [bold yellow]{agent_a}[/bold yellow] [cyan]→[/cyan] [bold magenta]{agent_b}[/bold magenta]"
+        chat_console.print()
+        panel = Panel(
+            f"{message}",
+            title=title,
+            # subtitle=message,
+            title_align="left",
+            padding=(1, 2),
+        )
+        chat_console.print(panel)
+
     def thinking(self, messages):
-        console.rule("🤖", characters="~", style="dim")
+        chat_console.rule("🤖", characters="~", style="dim")
         # console.print(messages)
 
+    async def async_thinking(self, messages, finished_event):
+        with Progress(SpinnerColumn(), console=Console(), transient=True) as progress:
+            building_task = progress.add_task("LLM thinking", total=None)
+            while not finished_event.is_set():
+                # console.clear()
+                elapsed_time = progress.tasks[building_task].elapsed
+                # chat_console.print(f"\r[dim] [+] Thinking {elapsed_time:.2f}s", end="")
+                # progress.update(
+                #     building_task, description=f"[dim][🤖] Thinking {elapsed_time:.2f}s"
+                # )
+                await asyncio.sleep(0.1)  # Update every second
+                progress.advance(building_task)  # Advance the spinner
+        # console.print(messages)
+        chat_console.print(
+            f"[dim][+] Thinking {progress.tasks[building_task].elapsed:.2f}s"
+        )
+        chat_console.print()
+
+    def price(self, value):
+        if value:
+            clear_previous_line()
+            chat_console.print(f"[dim][$] {value}")
+
     def observation(self, message):
-        console.print(f"{message}\n", style="italic dim")
+        chat_console.print(f"{message}\n", style="italic dim")
 
     def check_observation(self, obs: ChatCompletionMessageParam, max_size):
         if len(obs.get("content")) > max_size:
@@ -39,6 +78,7 @@ class ChatConsole:
                 .strip()
                 .lower()
             )
+            clear_previous_line()
             if input in ["o", "okay"]:
                 return obs
             elif input in ["s", "short"]:
@@ -57,27 +97,27 @@ class ChatConsole:
         )
         print()
         if input in {"exit", "e"}:
-            console.print("👋 [blue]Goodbye![/blue] \n")
+            chat_console.print("👋 [blue]Goodbye![/blue] \n")
             return None
         else:
             return input
 
     def answer(self, result):
-        console.print(f"✨ {result} \n", style="bold green")
+        chat_console.print(f"✨ {result.strip()} \n", style="bold green")
 
     def thought(self, result):
-        console.print(f"💭 {result} \n", style="blue")
+        chat_console.print(f"💭 {result} \n", style="blue")
 
     def error(self, message):
-        console.print(f"🐞 {message} \n", style="red")
+        chat_console.print(f"🐞 {message} \n", style="red")
 
     def overload(self, max_iter):
-        console.print(f"💣 [red]Reached maximum iterations: {max_iter}![/red]\n")
+        chat_console.print(f"💣 [red]Reached maximum iterations: {max_iter}![/red]\n")
 
     def check_action(self, permission, func_name, func_args, func_edit=0):
         tool_info = f"🛠  [yellow]{func_name}[/yellow] - {func_args}"
         if func_name == "execute_code":
-            console.print(
+            chat_console.print(
                 Syntax(
                     func_args["code"],
                     func_args["language"],
@@ -89,22 +129,30 @@ class ChatConsole:
             tool_info = f"🛠  [yellow]{func_args['language']}[/yellow]"
 
         if permission == ActionPermission.NONE:
-            console.print(tool_info)
+            chat_console.print(tool_info)
             return True
 
         if permission == ActionPermission.AUTO and func_edit == 0:  # enable auto
-            console.print(tool_info)
+            chat_console.print(tool_info)
             return True
 
         while True:
-            proceed = console.input(f"{tool_info}  👉 [dim]Y/N: [/dim]").strip().upper()
+            proceed = (
+                chat_console.input(f"{tool_info}  👉 [dim]Y/N: [/dim]").strip().upper()
+            )
             rich.print()
             if proceed == "Y":
                 return True
             elif proceed == "N":
-                console.print(f"🚫 Action is canceled by user \n", style="red")
+                chat_console.print(f"🚫 Action is canceled by user \n", style="red")
                 return False
             else:
-                console.print(
+                chat_console.print(
                     "⚠️ Invalid input! Please enter 'Y' or 'N'.\n", style="yellow"
                 )
+
+
+def clear_previous_line():
+    sys.stdout.write("\033[F")  # Move the cursor up one line
+    sys.stdout.write("\033[K")  # Clear the line
+    sys.stdout.flush()

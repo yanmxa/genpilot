@@ -2,7 +2,6 @@
 from .online_tool import wikipedia
 from .metadata import (
     func_metadata,
-    extract_tool,
     chat_tool,
     tool_name,
     build_from_template,

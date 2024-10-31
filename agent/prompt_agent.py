@@ -17,6 +17,7 @@ from openai.types.chat import (
 from type import ChatMessage, StatusCode
 from tool import func_metadata, build_from_template
 from .chat_agent import ChatAgent
+import traceback
 
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -70,7 +71,7 @@ class PromptAgent(ChatAgent):
     # https://github.com/openai/openai-python/blob/main/src/openai/types/chat/chat_completion_tool_param.py
     # https://platform.openai.com/docs/guides/function-calling
 
-    def _action_observation(
+    async def _action_observation(
         self, chat_message: ChatCompletionMessage
     ) -> Tuple[StatusCode, str]:
         try:
@@ -101,14 +102,9 @@ class PromptAgent(ChatAgent):
                 ):
                     return StatusCode.ACTION_FORBIDDEN, "Action cancelled by the user."
 
-                # observation
-                module_name = self._functions[func_name]
-                if module_name not in globals():
-                    globals()[module_name] = importlib.import_module(module_name)
-                func = getattr(sys.modules[module_name], func_name)
-                observation = func(**func_args)
-
-                self._console.observation(observation)
+                status, observation = await self._observation(func_name, func_args)
+                if status == StatusCode.ERROR:
+                    return StatusCode.ERROR, observation
 
                 self._memory.add(
                     self._console.check_observation(
@@ -140,4 +136,5 @@ class PromptAgent(ChatAgent):
                 f"{content}\n Validate error, Should only contain the JSON object:\n {e}",
             )
         except Exception as e:
+            traceback.print_exc()
             return StatusCode.ERROR, f"{content}\n An structured error occurred: {e}"

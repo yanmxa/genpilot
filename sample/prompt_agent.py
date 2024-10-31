@@ -1,8 +1,9 @@
 import os
 import sys
+import asyncio
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from tool import execute_code, ActionPermission
+from tool import execute_code
 from agent import PromptAgent
 from client import BedRockClient, GroqClient
 
@@ -16,12 +17,16 @@ def llama32_90b_client():
     )
 
 
-a = PromptAgent(
-    llama32_90b_client(),
-    "Assistant AI",
-    "You are an assistant to solve tasks. You can use the code executor write python code to do that",
-    tools=[execute_code],
-)
+async def main():
+    prompt = sys.argv[1]
+    a = PromptAgent(
+        llama32_90b_client(),
+        "Assistant AI",
+        "You are an assistant to solve tasks. You can use the code executor write python code to do that",
+        tools=[execute_code],
+    )
+    response = await a.run(prompt)
 
-prompt = sys.argv[1]
-print(a.run(prompt))
+
+if __name__ == "__main__":
+    asyncio.run(main())

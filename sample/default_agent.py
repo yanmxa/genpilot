@@ -1,9 +1,10 @@
 import os
 import sys
+import asyncio
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from client import BedRockClient, GroqClient
-from tool import wikipedia, execute_code, ActionPermission
+from tool import wikipedia, execute_code
 from agent import DefaultAgent
 
 
@@ -16,13 +17,16 @@ def llama32_90b_client():
     )
 
 
-a = DefaultAgent(
-    GroqClient(),
-    "Assistant AI",
-    "You are an assistant to solve tasks, Before give a tool or function action, please give a assistant response to show your thought about it",
-    tools=[wikipedia, execute_code],
-)
+async def main():
+    prompt = sys.argv[1]
+    a = DefaultAgent(
+        GroqClient(),
+        "Assistant AI",
+        "You are an assistant to solve tasks, Before give a tool or function action, please give a assistant response to show your thought about it",
+        tools=[wikipedia, execute_code],
+    )
+    response = await a.run(prompt)
 
-prompt = sys.argv[1]
 
-print(a.run(prompt))
+if __name__ == "__main__":
+    asyncio.run(main())

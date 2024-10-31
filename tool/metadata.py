@@ -18,21 +18,25 @@ from typing import Tuple, get_type_hints
 # [JSON Schema reference](https://json-schema.org/understanding-json-schema/)
 json_schema_mapping = {
     str: "string",
-    int: "number",
+    int: "integer",
     float: "number",
     bool: "boolean",
-    dict: "object",
     list: "array",
+    dict: "object",
+    type(None): "null",
 }
 
 
-def chat_tool(func) -> tuple[str, str, ChatCompletionToolParam]:
-    module = inspect.getmodule(func)
-    func_name = func.__name__
-    module_name = module.__name__
-    func_description = func.__doc__
-
-    parameters = inspect.signature(func).parameters
+# https://cookbook.openai.com/examples/orchestrating_agents#executing-routines
+# https://openai.com/index/function-calling-and-other-api-updates/
+# https://docs.llama-api.com/essentials/function
+def chat_tool(func) -> ChatCompletionToolParam:
+    try:
+        parameters = inspect.signature(func).parameters
+    except ValueError as e:
+        raise ValueError(
+            f"Failed to get signature for function {func.__name__}: {str(e)}"
+        )
 
     func_parameters: FunctionParameters = {
         "type": "object",
@@ -53,17 +57,13 @@ def chat_tool(func) -> tuple[str, str, ChatCompletionToolParam]:
         if param.default == inspect.Parameter.empty:
             func_parameters["required"].append(param_name)
 
-    return (
-        func_name,
-        module_name,
-        ChatCompletionToolParam(
-            type="function",
-            function=FunctionDefinition(
-                name=func_name,
-                description=func_description,
-                parameters=func_parameters,
-                strict=True,
-            ),
+    return ChatCompletionToolParam(
+        type="function",
+        function=FunctionDefinition(
+            name=func.__name__,
+            description=(func.__doc__ or "").strip(),
+            parameters=func_parameters,
+            strict=True,
         ),
     )
 
@@ -84,44 +84,6 @@ def tool_name(func):
     module = inspect.getmodule(func)
     module_name = module.__name__
     return func_name, module_name
-
-
-def extract_tool(func):
-    func_name = func.__name__
-    module = inspect.getmodule(func)
-    module_name = module.__name__
-    schema = function_to_schema(func)
-    return func_name, module_name, schema
-
-
-# https://openai.com/index/function-calling-and-other-api-updates/
-# https://docs.llama-api.com/essentials/function
-def function_to_schema(func):
-    func_name = func.__name__
-    docstring = func.__doc__ or "No description provided."
-    parameters = inspect.signature(func).parameters
-    type_hints = get_type_hints(func)
-
-    schema = {
-        "name": func_name,
-        "description": docstring.strip(),
-        "parameters": {"type": "object", "properties": {}, "required": []},
-    }
-
-    for param_name, param in parameters.items():
-        param_type = type_hints.get(param_name, str).__name__
-
-        property_info = {
-            "type": param_type.lower(),
-            "description": f"{param_name} parameter",
-        }
-
-        schema["parameters"]["properties"][param_name] = property_info
-
-        if param.default == inspect.Parameter.empty:
-            schema["parameters"]["required"].append(param_name)
-
-    return schema
 
 
 def build_from_template(file, mapping) -> str:

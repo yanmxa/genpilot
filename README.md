@@ -29,9 +29,13 @@
 
   ![governed action](./asset/action.png)
   Actions performed by the ZenAgent are regulated by developers with three permission levels:  
-  - **`auto`**: Requests permission only for actions that modify the system or environment
+  - **`auto`**: Requests permission only for actions that modify the system or environment[PromptAgent]
   - **`always`**: Requests permission for every action.  
   - **`none`**: Never requests permission.  
+
+- **Multi Agent**
+
+  You can easily switch the zen-agent into a multi-agent system. The Handoffs workflow for orchestrating agents is inspeared by this [post](https://cookbook.openai.com/examples/orchestrating_agents#executing-routines). Which is how to Swarm works. 
 
 - **Memory** [Planning]  
 
@@ -43,7 +47,3 @@
   > [CLIN: A CONTINUALLY LEARNING LANGUAGE AGENT FOR RAPID TASK ADAPTATION AND GENERALIZATION](https://arxiv.org/pdf/2310.10134)
 
   - History, and Summary
-
-- **Event-Based Connection** [Planning]
-
-  Facilitates event-driven coordination for multi-agent interactions.
