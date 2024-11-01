@@ -28,25 +28,15 @@ class ChatConsole:
         # console.print(Markdown(str))
         pass
 
-    # def delivery(self, agent_a, agent_b, message):
-    #     title = f"📨 [bold yellow]{agent_a}[/bold yellow] [cyan]→[/cyan] [bold magenta]{agent_b}[/bold magenta]"
-    #     chat_console.print()
-    #     panel = Panel(
-    #         f"[green]{message}[/green]",
-    #         title=title,
-    #         # subtitle=message,
-    #         title_align="left",
-    #         padding=(1, 2),
-    #     )
-    #     chat_console.print(panel)
-
     def delivery(self, agent_a, agent_b, message):
-        title = f"📨 [bold bright_yellow]{agent_a}[/bold bright_yellow] [bright_cyan]→[/bright_cyan] [bold bright_magenta]{agent_b}[/bold bright_magenta]"
+        #  title = f"📨 [bold yellow]{agent_a}[/bold yellow] [cyan]→[/cyan] [bold magenta]{agent_b}[/bold magenta]"
+        title = f"📨 [bold bright_cyan]{agent_b}[/bold bright_cyan]"
         chat_console.print()
 
         panel = Panel(
-            f"[dim white]{message}[/dim white]",
+            f"[white]{message}[/white]",
             title=title,
+            subtitle=f"from {agent_a}",
             title_align="left",
             padding=(1, 2),
             border_style="bright_black",  # A softer border color

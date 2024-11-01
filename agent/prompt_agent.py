@@ -16,7 +16,7 @@ from openai.types.chat import (
 )
 from type import ChatMessage, StatusCode
 from tool import func_metadata, build_from_template
-from .chat_agent import Agent
+from .agent import Agent
 import traceback
 from memory.chat_buffered_memory import ChatBufferedMemory
 

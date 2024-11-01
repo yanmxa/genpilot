@@ -2,8 +2,8 @@ import os
 import json
 import asyncio
 
+from typing import Union, Tuple, List, Protocol
 from abc import ABC, abstractmethod
-from typing import Union, Tuple, List
 
 from openai.types.chat import (
     ChatCompletionMessage,
@@ -24,11 +24,25 @@ from type import StatusCode, ActionPermission
 from memory import ChatMemory, ChatBufferedMemory
 from .chat_console import ChatConsole
 
+
 current_dir = os.path.dirname(os.path.realpath(__file__))
 FINAL_ANSWER = "ANSWER:"
 
 
-class Agent(ABC):
+class IAgent(ABC):
+    @property
+    @abstractmethod
+    def name(self):
+        pass
+
+    @abstractmethod
+    async def run(
+        self, message: Union[ChatCompletionMessageParam, str]
+    ) -> ChatCompletionAssistantMessageParam | None:
+        pass
+
+
+class Agent(IAgent):
 
     def __init__(
         self,
@@ -203,7 +217,7 @@ class Agent(ABC):
         observation = self._functions[func_name](**func_args)
 
         # The agent autonomously handles handoffs. https://cookbook.openai.com/examples/orchestrating_agents#executing-routines
-        if isinstance(observation, Agent):
+        if isinstance(observation, IAgent):
             agent: Agent = observation
             task: str = func_args["message"]
 
