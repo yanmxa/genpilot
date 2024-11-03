@@ -41,11 +41,15 @@
     <img src="https://asciinema.org/a/686709.svg" alt="asciicast" width="600" height="400">
   </a>
 
-- **Memory** [Planning]  
+- **Memory** [PROCESSING]  
 
-  Memory capabilities enhance accuracy and optimize the chain of thought by transitioning from stateless to stateful. Unlike RAG (Retrieval-Augmented Generation), which builds knowledge from external sources, our input is based on the agent's own experiences.
+  Memory capabilities enhance accuracy and optimize thought processes by transitioning from stateless to stateful operations. Unlike Retrieval-Augmented Generation (RAG), which builds knowledge from external sources, our approach is based on the agent's own experiences.
 
-  Frameworks like [MemGPT](https://memgpt.ai/) and [LangChain](https://www.langchain.com/) enable agents to memorize experiences. However, Zen-Agent leverages flexible tool integration to treat memory as a tool, allowing for easy decoupling and incorporation, thereby enhancing adaptability.
+  Zen-Agent provides an interface called `ChatMemory` that allows you to customize memory for your assistant. We offer two default memory implementations:
+
+  1. `ChatBufferMemory` A short-term memory solution designed to retrieve the most recent message along with the current session context.
+
+  2. `ChatVectorMemory` A long-term memory implementation based on LlamaIndex [vector memory](https://docs.llamaindex.ai/en/stable/examples/agent/memory/vector_memory/).
 
   > [MemGPT: Towards LLMs as Operating Systems](https://arxiv.org/pdf/2310.08560)
   > [CLIN: A CONTINUALLY LEARNING LANGUAGE AGENT FOR RAPID TASK ADAPTATION AND GENERALIZATION](https://arxiv.org/pdf/2310.10134)

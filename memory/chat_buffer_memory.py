@@ -1,11 +1,14 @@
 from typing import List, Any
 from openai.types.chat import (
     ChatCompletionMessageParam,
+    ChatCompletionSystemMessageParam,
 )
+
 from .chat_memory import ChatMemory
 
 
-class ChatBufferedMemory(ChatMemory):
+# ChatBufferMemory is a short-term memory implementation designed to retrieve the most recent message along with the current session context.
+class ChatBufferMemory(ChatMemory):
     def __init__(self, memory_id="", size=3):
         self._memory_id = memory_id
         self._messages: List[ChatCompletionMessageParam] = []
@@ -20,8 +23,16 @@ class ChatBufferedMemory(ChatMemory):
         if len(self._messages) > self._size:
             self._messages = self._messages[-self._size :]
 
-    def get(self) -> List[ChatCompletionMessageParam]:
-        return self._messages
+    def get(self, system) -> List[ChatCompletionMessageParam]:
+        new_messages = [
+            ChatCompletionSystemMessageParam(
+                role="system",
+                content=system,
+            )
+        ]
+        for message in self._messages:
+            new_messages.append(message)
+        return new_messages
 
     def clear(self) -> None:
         self._messages = []

@@ -16,11 +16,11 @@ class ChatMemory(ABC):
         pass
 
     @abstractmethod
-    def add(self, message: ChatCompletionMessageParam, round_end: bool = False):
+    def add(self, message: ChatCompletionMessageParam):
         pass
 
     @abstractmethod
-    def get(self) -> List[ChatCompletionMessageParam]:
+    def get(self, system) -> List[ChatCompletionMessageParam]:
         pass
 
     @abstractmethod

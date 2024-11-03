@@ -18,7 +18,7 @@ from type import ChatMessage, StatusCode
 from tool import func_metadata, build_from_template
 from .agent import Agent
 import traceback
-from memory.chat_buffered_memory import ChatBufferedMemory
+from memory.chat_buffer_memory import ChatBufferMemory
 
 
 current_dir = os.path.dirname(os.path.realpath(__file__))

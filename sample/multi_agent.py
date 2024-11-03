@@ -8,7 +8,7 @@ from client import BedRockClient, GroqClient
 from tool import wikipedia, execute_code
 from agent import DefaultAgent, Agent
 from agent.prompt_agent import PromptAgent
-from memory.chat_buffered_memory import ChatBufferedMemory
+from memory.chat_buffer_memory import ChatBufferMemory
 
 FINAL_ANSWER = "ANSWER:"
 
@@ -53,7 +53,7 @@ traveller = Agent(
     Prefix the response with '{FINAL_ANSWER}' once the task is complete!""",
     tools=[transfer_to_weather_observer, transfer_to_local_advisor],
     max_iter=10,
-    memory=ChatBufferedMemory(size=30),
+    memory=ChatBufferMemory(size=30),
 )
 
 if __name__ == "__main__":

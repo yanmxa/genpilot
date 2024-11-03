@@ -22,8 +22,9 @@ async def main():
     a = PromptAgent(
         llama32_90b_client(),
         "Assistant AI",
-        "You are an assistant to solve tasks. You can use the code executor write python code to do that",
+        "You are an assistant to solve tasks. You can use the code executor write python code to do that.",
         tools=[execute_code],
+        max_iter=10,
     )
     response = await a.run(prompt)
 

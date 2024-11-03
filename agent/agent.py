@@ -21,7 +21,7 @@ from tool import (
     tool_name,
 )
 from type import StatusCode, ActionPermission
-from memory import ChatMemory, ChatBufferedMemory
+from memory import ChatMemory, ChatBufferMemory
 from .chat_console import ChatConsole
 
 
@@ -74,7 +74,7 @@ class Agent(IAgent):
         self._is_terminal = is_terminal
 
         if self._memory is None:
-            self._memory = ChatBufferedMemory(6)
+            self._memory = ChatBufferMemory(6)
         self._console.system(self._system)
 
     @property
@@ -90,15 +90,7 @@ class Agent(IAgent):
         return [chat_tool(tool) for tool in tools]
 
     async def _thinking(self) -> ChatCompletionMessage:
-        new_messages = [
-            ChatCompletionSystemMessageParam(
-                role="system",
-                content=self._system,
-            )
-        ]
-        memory_messages = self._memory.get()
-        for message in memory_messages:
-            new_messages.append(message)
+        new_messages = self._memory.get(self._system)
 
         finished_event = asyncio.Event()
         model_thinking_task = asyncio.create_task(
