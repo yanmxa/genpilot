@@ -1,5 +1,5 @@
 import sys
-from typing import List
+from typing import List, Tuple
 from openai.types.chat import (
     ChatCompletionMessageParam,
     ChatCompletionUserMessageParam,
@@ -15,6 +15,7 @@ from rich.progress import Progress, SpinnerColumn
 import asyncio
 from type import ActionPermission
 from rich.console import Console
+from memory import ChatMemory
 
 
 chat_console = rich.get_console()
@@ -49,6 +50,7 @@ class ChatConsole:
         # console.print(messages)
 
     async def async_thinking(self, messages, finished_event):
+        # chat_console.print(messages)
         with Progress(SpinnerColumn(), console=Console(), transient=True) as progress:
             building_task = progress.add_task("LLM thinking", total=None)
             while not finished_event.is_set():
@@ -94,20 +96,30 @@ class ChatConsole:
                 return ChatCompletionUserMessageParam(role="user", content=f"{input}")
         return obs
 
-    def ask_input(self, messages=None) -> str:
-        input = (
-            Prompt.ask("🧘 [dim]Enter[/dim] [red]exit[/red][dim] or prompt[/dim]")
-            .strip()
-            .lower()
-        )
-        print()
-        if input in {"exit", "e"}:
-            chat_console.print("👋 [blue]Goodbye![/blue]")
-            return None
-        elif input == "debug":
-            chat_console.print(messages)
-        else:
-            return input
+    def ask_input(self, system, memory: ChatMemory) -> str:
+        while True:
+            user_input = (
+                Prompt.ask("🧘 [dim]Enter[/dim] [red]exit[/red][dim] or prompt[/dim]")
+                .strip()
+                .lower()
+            )
+            print()
+            if user_input in {"exit", "e"}:
+                chat_console.print("👋 [blue]Goodbye![/blue]")
+                break
+            elif user_input == "/debug":  # print the whole information
+                messages = memory.get(system)
+                chat_console.print(messages)
+                continue
+            elif "/memorize" in user_input or "/m" in user_input:
+                input = user_input.replace("/memorize", "").replace("/m", "").strip()
+                memory.add(
+                    ChatCompletionUserMessageParam(content=input, role="user"),
+                    persistent=True,
+                )
+                continue
+            else:
+                return user_input
 
     def answer(self, result):
         result = result.strip()

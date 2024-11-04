@@ -104,12 +104,19 @@ class Agent(IAgent):
         finished_event.set()
         await console_thinking_task
         self._console.price(price)
-
         # self._console.thinking()
         # assistant_message: ChatCompletionMessage = self._client(
         #     new_messages, self._tools
         # )
-        self._memory.add(assistant_message)
+        assistant_param = ChatCompletionAssistantMessageParam(
+            role="assistant",
+            content=assistant_message.content.replace(FINAL_ANSWER, "").strip(),
+        )
+        if assistant_message.function_call is not None:
+            assistant_param["function_call"] = assistant_message.function_call
+        if assistant_message.tool_calls is not None:
+            assistant_param["tool_calls"] = assistant_message.tool_calls
+        self._memory.add(assistant_param)
         return assistant_message
 
     async def run(
@@ -129,7 +136,7 @@ class Agent(IAgent):
                         name=self._name, content=obs_result, role="assistant"
                     )
                 self._console.answer(obs_result)
-                next_input = self._console.ask_input(self._memory.get())
+                next_input = self._console.ask_input(self._system, self._memory)
                 if next_input:
                     self._add_user_message(next_input)
                     i = 0
@@ -137,7 +144,7 @@ class Agent(IAgent):
                     return obs_result
             elif obs_status == StatusCode.THOUGHT:  # input or thinking
                 self._console.thought(obs_result)
-                next_step = self._console.ask_input()
+                next_step = self._console.ask_input(self._system, self._memory)
                 if next_step:
                     self._add_user_message(next_step)
                 else:

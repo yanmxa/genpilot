@@ -8,7 +8,7 @@ from client import BedRockClient, GroqClient
 from tool import wikipedia, execute_code
 from agent import DefaultAgent, Agent
 from agent.prompt_agent import PromptAgent
-from memory.chat_buffer_memory import ChatBufferMemory
+from memory import ChatBufferMemory, ChatVectorMemory
 
 FINAL_ANSWER = "ANSWER:"
 

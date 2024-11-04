@@ -18,7 +18,7 @@ class ChatBufferMemory(ChatMemory):
     def id(self) -> str:
         return self._memory_id
 
-    def add(self, message: ChatCompletionMessageParam):
+    def add(self, message: ChatCompletionMessageParam, persistent=False):
         self._messages.append(message)
         if len(self._messages) > self._size:
             self._messages = self._messages[-self._size :]

@@ -54,3 +54,8 @@
   > [MemGPT: Towards LLMs as Operating Systems](https://arxiv.org/pdf/2310.08560)
   > [CLIN: A CONTINUALLY LEARNING LANGUAGE AGENT FOR RAPID TASK ADAPTATION AND GENERALIZATION](https://arxiv.org/pdf/2310.10134)
 
+  3. `ChatPgMemory` ...
+
+- **RAG Support**
+
+We also provide a retrieval agent capable of integrating local resources or knowledge into the multi-agent system. The default implementation is based on LlamaIndex's [ChatEngine](https://docs.llamaindex.ai/en/stable/examples/chat_engine/chat_engine_best/).

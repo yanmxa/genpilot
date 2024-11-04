@@ -2,13 +2,18 @@ from typing import List, Any
 from llama_index.core.memory import VectorMemory
 from llama_index.core.base.llms.types import ChatMessage
 from openai.types.chat import (
+    ChatCompletionMessage,
     ChatCompletionMessageParam,
+    ChatCompletionToolParam,
     ChatCompletionSystemMessageParam,
-    ChatCompletionAssistantMessageParam,
     ChatCompletionUserMessageParam,
+    ChatCompletionToolMessageParam,
+    ChatCompletionAssistantMessageParam,
+    ChatCompletionMessageToolCall,
 )
+import datetime
 
-from test import vector_memory
+from agent.chat_console import chat_console
 from .chat_memory import ChatMemory
 
 
@@ -24,21 +29,46 @@ class ChatVectorMemory(ChatMemory):
     def id(self) -> str:
         return self._memory_id
 
-    def add(self, message: ChatCompletionMessageParam):
-        self._messages.append(message)
+    def add(
+        self,
+        message: ChatCompletionMessageParam | ChatCompletionMessage,
+        persistent=False,
+    ):
+        if message.get("content"):
+            self._messages.append(message)
+        time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        if persistent is True:
+            if message.get("content"):
+                content = message.get("content")
+                self._vector_memory.put(
+                    ChatMessage(
+                        role=message.get("role"),
+                        content=f"update at {time} with content: {content}",
+                    )
+                )
+            else:
+                for msg in self._messages:
+                    if self._target_vector_message(msg):
+                        content = msg.get("content")
+                        self._vector_memory.put(
+                            ChatMessage(
+                                role=message.get("role"),
+                                content=f"update at {time} with content: {content}",
+                            )
+                        )
+            # self._vector_memory.set()
+
         if len(self._messages) > self._size:
             self._messages = self._messages[-self._size :]
-        # add the vector
-        if self._target_vector_message(message):
-            msg = ChatMessage(role=message.get("role"), content=message.get("content"))
-            self._vector_memory.put(msg)
 
     def get(self, system) -> List[ChatCompletionMessageParam]:
         new_system = system
         # add context to system by the vector memory
         last_message = self._messages[-1]
         if self._target_vector_message(last_message):
-            chat_msgs: List[ChatMessage] = self._vector_memory.get(last_message)
+            chat_msgs: List[ChatMessage] = self._vector_memory.get(
+                last_message.get("content")
+            )
             if len(chat_msgs) > 0:
                 # refer: https://docs.llamaindex.ai/en/stable/examples/agent/memory/composable_memory/
                 memories = [
@@ -64,12 +94,12 @@ class ChatVectorMemory(ChatMemory):
     def clear(self) -> None:
         self._messages = []
 
-    def _target_vector_message(self, message: ChatCompletionMessageParam) -> bool:
+    def _target_vector_message(
+        self, message: ChatCompletionMessageParam | ChatCompletionMessage
+    ) -> bool:
         if self._vector_memory is None:
             raise ValueError("the vector memory is not set for the ChatVectorMemory")
-        if isinstance(message, ChatCompletionAssistantMessageParam) or isinstance(
-            message, ChatCompletionUserMessageParam
-        ):
+        if message.get("role") == "user" or message.get("role") == "assistant":
             return True
 
         return False
