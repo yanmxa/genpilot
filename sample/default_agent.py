@@ -4,29 +4,28 @@ import asyncio
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from client import BedRockClient, GroqClient
-from tool import wikipedia, execute_code
+from tool import wikipedia, code_executor
 from agent import DefaultAgent
+from client.config import ClientConfig
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
-def llama32_90b_client():
-    return BedRockClient(
-        "us.meta.llama3-2-90b-instruct-v1:0",
-        {"maxTokens": 2000, "temperature": 0.2},
-        0.002,  # $0.002 per 1000 input tokens
-        0.002,  # $0.002 per 1000 output tokens
+groq_client = GroqClient(
+    ClientConfig(
+        model="llama3-70b-8192", temperature=0.2, api_key=os.getenv("GROQ_API_KEY")
     )
-
-
-async def main():
-    prompt = sys.argv[1]
-    a = DefaultAgent(
-        GroqClient(),
-        "Assistant AI",
-        "You are an assistant to solve tasks, Before give a tool or function action, please give a assistant response to show your thought about it",
-        tools=[wikipedia, execute_code],
-    )
-    response = await a.run(prompt)
-
+)
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    prompt = sys.argv[1]
+    asyncio.run(
+        DefaultAgent(
+            groq_client,
+            "Assistant AI",
+            "You are an assistant to solve tasks, Before give a tool or function action, please give a assistant response to show your thought about it",
+            tools=[wikipedia, code_executor],
+        ).run(prompt)
+    )

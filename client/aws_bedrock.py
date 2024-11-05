@@ -16,6 +16,7 @@ import rich
 
 from dotenv import load_dotenv
 import rich.json
+from client.config import ClientConfig
 
 load_dotenv()
 
@@ -25,14 +26,12 @@ console = Console()
 
 # We will not address compatibility between this SDK and the OpenAI SDK. For other client SDKs, we will use structured content to directly wrap the tools' information.
 class BedRockClient:
-    def __init__(
-        self, model_id, inference_config, price_per_1000_input, price_per_1000_output
-    ):
+    def __init__(self, config: ClientConfig):
         # reference: https://community.aws/content/2hHgVE7Lz6Jj1vFv39zSzzlCilG/getting-started-with-the-amazon-bedrock-converse-api?lang=en
-        self.model_id = model_id
-        self.inference_config = inference_config
-        self.price_per_1000_input = price_per_1000_input
-        self.price_per_1000_output = price_per_1000_output
+        self.model_id = config.model
+        self.inference_config = config.ext["inference_config"]
+        self.price_per_1000_input = config.price_1k_token_in
+        self.price_per_1000_output = config.price_1k_token_out
         self.total_price = 0
 
         session = boto3.Session()
@@ -48,6 +47,7 @@ class BedRockClient:
         messages: Iterable[ChatCompletionMessageParam],
         tools: Iterable[ChatCompletionToolParam],
     ):
+
         message_list = []
         for msg in messages:
             if isinstance(msg, ChatCompletionMessage):
@@ -63,6 +63,11 @@ class BedRockClient:
                 else:
                     message_list.append({"role": msg["role"], "content": content})
 
+        while len(message_list) > 0 and message_list[0]["role"] != "user":
+            message_list.pop(0)
+
+        # import rich
+        # rich.get_console().print(message_list)
         response = self.client.converse(
             modelId=self.model_id,
             messages=message_list,

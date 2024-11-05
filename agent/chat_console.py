@@ -136,7 +136,7 @@ class ChatConsole:
 
     def check_action(self, permission, func_name, func_args, func_edit=0):
         tool_info = f"🛠  [yellow]{func_name}[/yellow] - {func_args}"
-        if func_name == "execute_code":
+        if func_name == "code_executor":
             chat_console.print(
                 Syntax(
                     func_args["code"],

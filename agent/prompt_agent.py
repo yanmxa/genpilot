@@ -28,14 +28,7 @@ console = rich.get_console()
 
 class PromptAgent(Agent):
 
-    def __init__(
-        self,
-        client,
-        name,
-        system,
-        tools=[],
-        max_iter=6,
-    ):
+    def __init__(self, client, name, system, tools=[], max_iter=6, memory=None):
         system = build_from_template(
             os.path.join(current_dir, "..", "prompt", "prompt_agent.md"),
             {
@@ -44,7 +37,7 @@ class PromptAgent(Agent):
             },
         )
         system += self._tool_markdown(tools)
-        super().__init__(name, system, tools, client, max_iter=max_iter)
+        super().__init__(name, system, tools, client, max_iter=max_iter, memory=memory)
 
     def _tool_markdown(self, tools) -> str:
         system_tool_content = ["## Available Tools:\n"]
@@ -101,6 +94,9 @@ class PromptAgent(Agent):
                 if status == StatusCode.ERROR:
                     return StatusCode.ERROR, observation
 
+                if observation == "":
+                    observation = "no result found the action"
+
                 self._memory.add(
                     self._console.check_observation(
                         ChatCompletionUserMessageParam(
@@ -120,6 +116,7 @@ class PromptAgent(Agent):
                     f"can't parse validate action, thought, or answer from the response",
                 )
         except ValidationError as e:
+            traceback.print_exc()
             self._memory.add(
                 ChatCompletionUserMessageParam(
                     content=f"Validate error in the response: {e}",
@@ -132,4 +129,13 @@ class PromptAgent(Agent):
             )
         except Exception as e:
             traceback.print_exc()
-            return StatusCode.ERROR, f"{content}\n An structured error occurred: {e}"
+            self._memory.add(
+                ChatCompletionUserMessageParam(
+                    content=f"Validate error in the response: {e}",
+                    role="user",
+                )
+            )
+            return (
+                StatusCode.OBSERVATION,
+                f"{content}\n An structured error occurred: {e}",
+            )

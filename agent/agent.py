@@ -74,7 +74,7 @@ class Agent(IAgent):
         self._is_terminal = is_terminal
 
         if self._memory is None:
-            self._memory = ChatBufferMemory(6)
+            self._memory = ChatBufferMemory("", size=6)
         self._console.system(self._system)
 
     @property
@@ -108,14 +108,20 @@ class Agent(IAgent):
         # assistant_message: ChatCompletionMessage = self._client(
         #     new_messages, self._tools
         # )
+
         assistant_param = ChatCompletionAssistantMessageParam(
             role="assistant",
-            content=assistant_message.content.replace(FINAL_ANSWER, "").strip(),
+            name=self.name,
         )
+        if assistant_message.content is not None and assistant_message.content != "":
+            assistant_param["content"] = assistant_message.content.replace(
+                FINAL_ANSWER, ""
+            ).strip()
         if assistant_message.function_call is not None:
             assistant_param["function_call"] = assistant_message.function_call
         if assistant_message.tool_calls is not None:
             assistant_param["tool_calls"] = assistant_message.tool_calls
+
         self._memory.add(assistant_param)
         return assistant_message
 
@@ -146,6 +152,7 @@ class Agent(IAgent):
                 self._console.thought(obs_result)
                 next_step = self._console.ask_input(self._system, self._memory)
                 if next_step:
+                    i = 0
                     self._add_user_message(next_step)
                 else:
                     return

@@ -11,6 +11,7 @@ from typing import Iterable
 import rich
 
 from dotenv import load_dotenv
+from client.config import ClientConfig
 
 load_dotenv()
 
@@ -19,11 +20,12 @@ NOT_GIVEN = NotGiven()
 
 
 class GroqClient:
-    def __init__(self):
-        self.model_id = "llama3-70b-8192"
-        self.model_temperature = 0.2
+    def __init__(self, config: ClientConfig):
+
+        self.model_id = config.model
+        self.model_temperature = config.temperature
         self.client = Groq(
-            api_key=os.getenv("GROQ_API_KEY"),
+            api_key=config.api_key,
         )
 
     def __call__(

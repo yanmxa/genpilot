@@ -22,6 +22,8 @@ class ChatBufferMemory(ChatMemory):
         self._messages.append(message)
         if len(self._messages) > self._size:
             self._messages = self._messages[-self._size :]
+        if self._messages[0]["role"] == "tool":
+            self._messages = self._messages[1:]
 
     def get(self, system) -> List[ChatCompletionMessageParam]:
         new_messages = [

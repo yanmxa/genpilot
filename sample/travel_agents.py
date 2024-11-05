@@ -4,13 +4,29 @@ import asyncio
 import json
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from client import BedRockClient, GroqClient
-from tool import wikipedia, execute_code
-from agent import DefaultAgent, Agent
-from agent.prompt_agent import PromptAgent
+from client import BedRockClient, GroqClient, ClientConfig
+from tool import wikipedia, code_executor
+from agent import DefaultAgent, Agent, PromptAgent, FINAL_ANSWER
 from memory import ChatBufferMemory, ChatVectorMemory
+from dotenv import load_dotenv
 
-FINAL_ANSWER = "ANSWER:"
+load_dotenv()
+
+
+bedrock_client = BedRockClient(
+    ClientConfig(
+        model="us.meta.llama3-2-90b-instruct-v1:0",
+        price_1k_token_in=0.002,  # $0.002 per 1000 input tokens
+        price_1k_token_out=0.002,
+        ext={"inference_config": {"maxTokens": 2000, "temperature": 0.2}},
+    )
+)
+
+groq_client = GroqClient(
+    ClientConfig(
+        model="llama3-70b-8192", temperature=0.2, api_key=os.getenv("GROQ_API_KEY")
+    )
+)
 
 
 def get_weather(location, time="now"):
@@ -20,7 +36,7 @@ def get_weather(location, time="now"):
 
 weather_observer = Agent(
     name="Weather Observer",
-    client=GroqClient(),
+    client=groq_client,
     system=f"""Your role focuses on retrieving and analyzing current weather conditions for a specified city. Your Responsibilities: 1. Use the weather tool to find temperature, and other relevant weather data. 2. Provide updates on weather changes and forecasts.
     Prefix the response with '{FINAL_ANSWER}' once the task is complete!""",
     tools=[get_weather],
@@ -28,7 +44,7 @@ weather_observer = Agent(
 
 
 advisor = Agent(
-    client=GroqClient(),
+    client=groq_client,
     name="Local Advisor",
     system=f"""Your role specializes in understanding local fashion trends and cultural influences to recommend suitable clothing.
     Prefix the response with '{FINAL_ANSWER}' once the task is complete!""",
@@ -47,7 +63,7 @@ def transfer_to_local_advisor(message: str):
 
 
 traveller = Agent(
-    client=GroqClient(),
+    client=groq_client,
     name="Traveller",
     system=f"""This managerial role combines insights from both the Weather Observer and the Fashion and Culture Advisor to recommend appropriate clothing choices. Once you have the information for both Observer and Advisor. You can summarize give the final response. The final response with concise, straightforward items, like 1,2,3...
     Prefix the response with '{FINAL_ANSWER}' once the task is complete!""",
