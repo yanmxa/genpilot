@@ -84,7 +84,7 @@ Your response shouldn't contain "```json" and "```". And always try to make the 
 
 5. If no tools are available in your response, summarize the result for the initial question in the 'answer' field.
 
-6. If the JSON response contains code or a code block, ensure it is properly formatted. This can be achieved by either placing the code on a single line or by replacing all newline characters (\n) within the code. This will help preserve the structure of the code and prevent any issues with JSON validation.
+6. If the JSON response contains code or a code block, ensure it is properly formatted. For example, you can replace all newline characters (\n) within the code. This will help preserve the structure of the code and prevent any issues with JSON validation.
 
 7. Additionally, ensure that the code block in action is self-contained and does not rely on variables or packages outside of the current code block. Attempt to solve the task using the least amount of code block possible.
 

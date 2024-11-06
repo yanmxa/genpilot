@@ -13,15 +13,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-bedrock_client = BedRockClient(
-    ClientConfig(
-        model="us.meta.llama3-2-90b-instruct-v1:0",
-        price_1k_token_in=0.002,  # $0.002 per 1000 input tokens
-        price_1k_token_out=0.002,
-        ext={"inference_config": {"maxTokens": 2000, "temperature": 0.2}},
-    )
-)
-
 groq_client = GroqClient(
     ClientConfig(
         model="llama3-70b-8192", temperature=0.2, api_key=os.getenv("GROQ_API_KEY")
@@ -29,7 +20,7 @@ groq_client = GroqClient(
 )
 
 
-engineer = PromptAgent(
+engineer = Agent(
     name="Engineer",
     client=groq_client,
     tools=[code_executor],
@@ -38,9 +29,12 @@ engineer = PromptAgent(
     system=f"""
 You are a Kubernetes Engineer.
 
-**Objective:**
+**Objective:** to handle the following two case:
 
-Analyze the user's task or issue, break it down into actionable steps for Kubernetes resources, and translate those steps into the necessary kubectl commands to interact with the Kubernetes cluster. Use the code_executor to run the commands.
+If the user provides only a command or code block, execute it using the code_executor and then return the summarized result!
+
+If the user post a task or issue, break it down into actionable steps for Kubernetes resources, and translate those steps into the necessary kubectl commands(use the code_executor tool to run them) to interact with the Kubernetes cluster.
+
 
 If the issue cannot be resolved in a single step, create a plan outlining the necessary steps to address it, and execute each step one by one. After each step, verify the outcome:
 
@@ -53,9 +47,16 @@ After two rounds of executing the plan, if the issue is still unresolved, summar
 
 **Examples:**
 
+**Example 0: Just with the code block**
+
+Request: `oc get klusterlet klusterlet --context kind-cluster2`
+Response: 
+  NAME         AGE
+  klusterlet   2d10h
+
 **Example 1: Checking the Status of `<resource>`**
 
-Since many resources have a status, we’ll assume `<resource>` refers to a resource type. The process involves identifying the resource type, locating its instances, and checking their status.
+Since many resources have a status, we'll assume `<resource>` refers to a resource type. The process involves identifying the resource type, locating its instances, and checking their status.
 
 **Step 1: Identify the Resource Type**
 
@@ -123,10 +124,11 @@ Two pod instances of `<component>`:
 Total: 3m CPU, 75Mi memory.
 ```
 
-Prefix the response with '{FINAL_ANSWER}' once the task is complete!""",
+Prefix the response with '{FINAL_ANSWER}' once the task is complete!
+""",
 )
 
 
-if __name__ == "__main__":
-    prompt = sys.argv[1]
-    asyncio.run(engineer.run(prompt))
+# if __name__ == "__main__":
+#     prompt = sys.argv[1]
+#     asyncio.run(engineer.run(prompt))

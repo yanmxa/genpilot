@@ -16,6 +16,7 @@ import asyncio
 from type import ActionPermission
 from rich.console import Console
 from memory import ChatMemory
+from rich.markdown import Markdown
 
 
 chat_console = rich.get_console()
@@ -29,15 +30,18 @@ class ChatConsole:
         # console.print(Markdown(str))
         pass
 
-    def delivery(self, agent_a, agent_b, message):
+    def delivery(self, from_agent, to_agent, message):
         #  title = f"📨 [bold yellow]{agent_a}[/bold yellow] [cyan]→[/cyan] [bold magenta]{agent_b}[/bold magenta]"
-        title = f"📨 [bold bright_cyan]{agent_b}[/bold bright_cyan]"
+        title = f"📨 [bold bright_cyan]{to_agent}[/bold bright_cyan]"
         chat_console.print()
 
+        markdown = Markdown(message)
+
+        # f"[white]{message}[/white]"
         panel = Panel(
-            f"[white]{message}[/white]",
+            markdown,
             title=title,
-            subtitle=f"from {agent_a}",
+            subtitle=f"from {from_agent}",
             title_align="left",
             padding=(1, 2),
             border_style="bright_black",  # A softer border color
@@ -46,8 +50,13 @@ class ChatConsole:
         chat_console.print(panel)
 
     def thinking(self, messages):
-        chat_console.rule("🤖", characters="~", style="dim")
-        # console.print(messages)
+        # chat_console.rule("🤖", characters="~", style="dim")
+        # chat_console.print(messages)
+        for msg in messages:
+            chat_console.print(
+                f"    {msg}", style="dim blue"
+            )  # Print each character with style
+        chat_console.print()
 
     async def async_thinking(self, messages, finished_event):
         # chat_console.print(messages)
@@ -67,6 +76,7 @@ class ChatConsole:
         if value:
             clear_previous_lines()
             chat_console.print(f"[dim][$] {value}")
+            chat_console.print()
 
     def observation(self, message):
         text = Text(f"{message}")
@@ -118,6 +128,9 @@ class ChatConsole:
                     persistent=True,
                 )
                 continue
+            elif "/clear" in user_input:
+                memory.clear()
+                continue
             else:
                 return user_input
 
@@ -135,7 +148,7 @@ class ChatConsole:
         chat_console.print(f"💣 [red]Reached maximum iterations: {max_iter}![/red]\n")
 
     def check_action(self, permission, func_name, func_args, func_edit=0):
-        tool_info = f"🛠  [yellow]{func_name}[/yellow] - {func_args}"
+        tool_info = f"🛠  [yellow]{func_name}[/yellow] - [dim]{func_args}[/dim]"
         if func_name == "code_executor":
             chat_console.print(
                 Syntax(
@@ -147,7 +160,10 @@ class ChatConsole:
             )
             rich.print()
             tool_info = f"🛠  [yellow]{func_args['language']}[/yellow]"
-
+        else:
+            if len(f"{func_args}") > 30:
+                args_str = f"{func_args}"[:50] + "..." + f"{func_args}"[-15:]
+                tool_info = f"🛠  [yellow]{func_name}[/yellow] - [dim]{args_str}[/dim]"
         if permission == ActionPermission.NONE:
             chat_console.print(tool_info)
             return True
@@ -158,7 +174,9 @@ class ChatConsole:
 
         while True:
             proceed = (
-                chat_console.input(f"{tool_info}  👉 [dim]Y/N: [/dim]").strip().upper()
+                chat_console.input(f"{tool_info}  👉 [dim]Approve?: [/dim]")
+                .strip()
+                .upper()
             )
             rich.print()
             if proceed == "Y":

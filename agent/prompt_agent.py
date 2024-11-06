@@ -2,7 +2,6 @@ import os
 import sys
 import json
 import importlib
-import rich
 from typing import Union, Tuple, List
 from pydantic import ValidationError
 from openai.types.chat import (
@@ -22,8 +21,6 @@ from memory.chat_buffer_memory import ChatBufferMemory
 
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
-
-console = rich.get_console()
 
 
 class PromptAgent(Agent):
@@ -70,9 +67,7 @@ class PromptAgent(Agent):
             chat_message: ChatMessage = ChatMessage.model_validate(json_content)
 
             if chat_message.thought:
-                rich.get_console().print()
-                rich.get_console().print("\n".join(chat_message.thought))
-                rich.get_console().print()
+                self._console.thinking(chat_message.thought)
             if chat_message.action:
                 func_name = chat_message.action.name
                 func_args = chat_message.action.args
@@ -125,10 +120,10 @@ class PromptAgent(Agent):
             )
             return (
                 StatusCode.OBSERVATION,
-                f"{content}\n Validate error, Should only contain the JSON object:\n {e}",
+                f"{content}\n ValidationError:\n {e}",
             )
-        except Exception as e:
-            traceback.print_exc()
+        except json.decoder.JSONDecodeError as e:
+            # traceback.print_exc()
             self._memory.add(
                 ChatCompletionUserMessageParam(
                     content=f"Validate error in the response: {e}",
@@ -137,5 +132,12 @@ class PromptAgent(Agent):
             )
             return (
                 StatusCode.OBSERVATION,
+                f"{content}\n JSONDecodeError:\n {e}",
+            )
+        except Exception as e:
+            traceback.print_exc()
+            print(chat_message.content)
+            return (
+                StatusCode.ERROR,
                 f"{content}\n An structured error occurred: {e}",
             )

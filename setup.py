@@ -22,7 +22,7 @@ def read(*paths, **kwargs):
 
 setup(
     name="zen-agent",
-    version="0.1.5",
+    version="0.1.6",
     packages=find_packages(),
     install_requires=[],
     description="ZenAgent facilitates the creation of AI assistant and the development of advanced multi-agent system.",

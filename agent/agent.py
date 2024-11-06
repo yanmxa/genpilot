@@ -22,7 +22,7 @@ from tool import (
 )
 from type import StatusCode, ActionPermission
 from memory import ChatMemory, ChatBufferMemory
-from .chat_console import ChatConsole
+from .chat import ChatConsole
 
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -137,7 +137,7 @@ class Agent(IAgent):
         while i < self._max_iter:
             if obs_status == StatusCode.ANSWER:  # return, input or thinking
                 if not self._standalone:
-                    # self._memory.clear()
+                    self._memory.clear()
                     return ChatCompletionAssistantMessageParam(
                         name=self._name, content=obs_result, role="assistant"
                     )
@@ -255,6 +255,7 @@ class Agent(IAgent):
     def _add_user_message(self, message: Union[ChatCompletionUserMessageParam, str]):
         if isinstance(message, str):
             message = ChatCompletionUserMessageParam(content=message, role="user")
+
         self._console.delivery(
             message.get("name", "user"), self.name, message.get("content")
         )

@@ -13,7 +13,6 @@ from openai.types.chat import (
 )
 import datetime
 
-from agent.chat_console import chat_console
 from .chat_memory import ChatMemory
 
 
