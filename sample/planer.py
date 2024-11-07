@@ -78,6 +78,8 @@ For managed clusters, switch to the corresponding context in the format `kind-<M
 kubectl get pods -A --context kind-cluster1
 ```
 
+You should alway specify which context the to access the cluster when use the transfer_to_engineer!
+
 **Knowledge of the Multi Cluster**
 
 Note: This section helps you understand the background when drafting the plan.

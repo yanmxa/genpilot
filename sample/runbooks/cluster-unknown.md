@@ -81,7 +81,7 @@ If the `klusterlet-registration-agent` deployment is not found, then go to the n
 oc -n open-cluster-management get deploy/klusterlet --context <managed-cluster-context>
 ```
 
-If the Klusterlet agent instance isn't running, this is why the Klusterlet registration agent instance is not operational! Then get the deployment detail of the klusterlet agent to find why the instance hasn't running and return the result.
+If the Klusterlet agent instance isn't running, this is why the Klusterlet registration agent instance is not operational! Then get the deployment detail(like `... -oyaml`) of the klusterlet agent to find why the instance hasn't running and return the result.
 
 If the klusterlet agent instance(pod) exists, check the logs of the klusterlet agent.
 

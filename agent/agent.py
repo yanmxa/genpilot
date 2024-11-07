@@ -141,7 +141,9 @@ class Agent(IAgent):
                         name=self._name, content=obs_result, role="assistant"
                     )
                 self._console.answer(obs_result)
-                next_input = self._console.ask_input(self._system, self._memory)
+                next_input = self._console.ask_input(
+                    self._system, self._memory, self._tools
+                )
                 if next_input:
                     self._add_user_message(next_input)
                     i = 0
@@ -149,7 +151,9 @@ class Agent(IAgent):
                     return obs_result
             elif obs_status == StatusCode.THOUGHT:  # input or thinking
                 self._console.thought(obs_result)
-                next_step = self._console.ask_input(self._system, self._memory)
+                next_step = self._console.ask_input(
+                    self._system, self._memory, self._tools
+                )
                 if next_step:
                     i = 0
                     self._add_user_message(next_step)

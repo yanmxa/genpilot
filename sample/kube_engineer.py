@@ -15,7 +15,8 @@ load_dotenv()
 
 groq_client = GroqClient(
     ClientConfig(
-        model="llama-3.1-70b-versatile",
+        # model="llama-3.1-70b-versatile",
+        model="llama3-70b-8192",
         temperature=0.2,
         api_key=os.getenv("GROQ_API_KEY"),
     )
@@ -29,14 +30,11 @@ engineer = Agent(
     max_iter=20,
     memory=ChatBufferMemory(size=20),
     system=f"""
-You are a Kubernetes Engineer.
+You are a Kubernetes Engineer use the kubectl command or code block to interact with the kubernetes by code_executor.
 
-**Objective:** to handle the following two case:
-
-If the user provides only a command or code block, execute it using the code_executor and then return the summarized result!
+If the user provides only a command or code block, execute it using the code_executor tool to run it and return the executed result directly!(prefix the response with '{FINAL_ANSWER}' return the result!)
 
 If the user post a task or issue, break it down into actionable steps for Kubernetes resources, and translate those steps into the necessary kubectl commands(use the code_executor tool to run them) to interact with the Kubernetes cluster.
-
 
 If the issue cannot be resolved in a single step, create a plan outlining the necessary steps to address it, and execute each step one by one. After each step, verify the outcome:
 
@@ -51,8 +49,8 @@ After two rounds of executing the plan, if the issue is still unresolved, summar
 
 **Example 0: Just with the code block**
 
-Request: `oc get klusterlet klusterlet --context kind-cluster2`
-Response: 
+Request: bash command "oc get klusterlet klusterlet --context kind-cluster2"
+Return: 
   NAME         AGE
   klusterlet   2d10h
 

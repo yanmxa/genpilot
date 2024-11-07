@@ -112,9 +112,10 @@ class PromptAgent(Agent):
                 )
         except ValidationError as e:
             traceback.print_exc()
+            print(chat_message)
             self._memory.add(
                 ChatCompletionUserMessageParam(
-                    content=f"Validate error in the response: {e}",
+                    content=f"ValidationError in the response: {e}",
                     role="user",
                 )
             )
@@ -124,9 +125,10 @@ class PromptAgent(Agent):
             )
         except json.decoder.JSONDecodeError as e:
             traceback.print_exc()
+            print(chat_message)
             self._memory.add(
                 ChatCompletionUserMessageParam(
-                    content=f"Validate error in the response: {e}",
+                    content=f"JSONDecodeError in the response: {e}",
                     role="user",
                 )
             )
@@ -136,7 +138,7 @@ class PromptAgent(Agent):
             )
         except Exception as e:
             traceback.print_exc()
-            print(chat_message.content)
+            print(chat_message)
             return (
                 StatusCode.ERROR,
                 f"{content}\n An structured error occurred: {e}",

@@ -53,13 +53,12 @@ class ChatConsole:
         # chat_console.rule("🤖", characters="~", style="dim")
         # chat_console.print(messages)
         for msg in messages:
-            chat_console.print(
-                f"    {msg}", style="dim blue"
-            )  # Print each character with style
+            chat_console.print(f"    {msg}", style="dim blue")
         chat_console.print()
 
     async def async_thinking(self, messages, finished_event):
         # chat_console.print(messages)
+        chat_console.print()
         with Progress(SpinnerColumn(), console=Console(), transient=True) as progress:
             building_task = progress.add_task("LLM thinking", total=None)
             while not finished_event.is_set():
@@ -86,16 +85,19 @@ class ChatConsole:
         if len(obs.get("content")) > max_size:
             chat_console.print()
             input = (
-                Prompt.ask(
-                    "🤔 [dim]Enter[/dim] [green]o[/green]kay, [green]s[/green]hort[dim] or prompt[/dim]"
-                )
+                Prompt.ask("🤔 [dim]Enter [green]s[/green]hort observation[/dim]")
                 .strip()
                 .lower()
             )
-            clear_previous_lines(2)
-            if input in ["o", "okay"]:
+            clear_previous_lines(n=2)
+            if input == "" or input in ["y", "yes", "okay", "ok"]:
                 return obs
             elif input in ["s", "short"]:
+                return ChatCompletionUserMessageParam(
+                    role="user",
+                    content="Observation too large to display, but successful—continue to the next step!",
+                )
+            elif input in ["e", "exit"]:
                 return ChatCompletionUserMessageParam(
                     role="user",
                     content="Observation too large to display, but successful—continue to the next step!",
@@ -104,7 +106,7 @@ class ChatConsole:
                 return ChatCompletionUserMessageParam(role="user", content=f"{input}")
         return obs
 
-    def ask_input(self, system, memory: ChatMemory) -> str:
+    def ask_input(self, system, memory: ChatMemory, tools=None) -> str:
         while True:
             user_input = (
                 Prompt.ask("🧘 [dim]Enter[/dim] [red]exit[/red][dim] or prompt[/dim]")
@@ -118,6 +120,8 @@ class ChatConsole:
             elif user_input == "/debug":  # print the whole information
                 messages = memory.get(system)
                 chat_console.print(messages)
+                if tools:
+                    chat_console.print(tools)
                 continue
             elif "/memorize" in user_input or "/m" in user_input:
                 input = user_input.replace("/memorize", "").replace("/m", "").strip()
@@ -140,6 +144,7 @@ class ChatConsole:
         chat_console.print(f"💭 {result} \n", style="blue")
 
     def error(self, message):
+        chat_console.print()
         chat_console.print(f"🐞 {message} \n", style="red")
 
     def overload(self, max_iter):
@@ -159,8 +164,8 @@ class ChatConsole:
             rich.print()
             tool_info = f"🛠  [yellow]{func_args['language']}[/yellow]"
         else:
-            if len(f"{func_args}") > 30:
-                args_str = f"{func_args}"[:50] + "..." + f"{func_args}"[-15:]
+            if len(f"{func_args}") > 20:
+                args_str = f"{func_args}"[:10] + "..." + f"{func_args}"[-10:]
                 tool_info = f"🛠  [yellow]{func_name}[/yellow] - [dim]{args_str}[/dim]"
         if permission == ActionPermission.NONE:
             chat_console.print(tool_info)
@@ -172,7 +177,7 @@ class ChatConsole:
 
         while True:
             proceed = (
-                chat_console.input(f"{tool_info}  👉 [dim]Approve?: [/dim]")
+                chat_console.input(f"{tool_info}  👉 [dim]Approve ?: [/dim]")
                 .strip()
                 .upper()
             )

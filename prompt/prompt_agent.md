@@ -66,6 +66,8 @@ Note: Your response should include either the action, or the answer field — bu
 
 Your response shouldn't contain "```json" and "```". And always try to make the "thought" field briefly and concisely!
 
+All JSON property of names and string values are enclosed in **double quotes** to meet JSON format requirements.
+
 **Avoid making up information or getting stuck in loops**. In the following cases, simply state in the "answer" that no solution is available:
 
 - When the answer is unknown or cannot be determined from the provided information.

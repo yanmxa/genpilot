@@ -2,7 +2,7 @@ import subprocess
 import traceback
 
 
-def code_executor(language: str, code: str):
+def code_executor(language, code):
     """
     Executes code based on the specified programming language.
 
@@ -16,11 +16,7 @@ def code_executor(language: str, code: str):
     Example:
 
         # Python example
-        python_code = "
-        def greet():
-            return 'Hello from Python!'
-        result = greet()
-        "
+        python_code = f"def greet():\n    return 'Hello from Python!'\nresult = greet()"
         print(execute_code('python', python_code))
 
         # Bash example
@@ -32,35 +28,35 @@ def code_executor(language: str, code: str):
         print(execute_code('nodejs', js_code))
     """
     try:
-        if language.lower() == "python":
-            # Create a context dictionary to capture any variables or outputs from exec.
-            context = {}
-            exec(code, {}, context)  # Execute Python code with the context.
-            return context  # Return the context to show the final state of variables (if any).
-        elif language.lower() == "bash":
-            result = subprocess.run(
-                code,
-                shell=True,
-                check=True,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+        if language == "python":
+            process = subprocess.run(
+                ["python3", "-c", code], capture_output=True, text=True
             )
-            return result.stdout
-        elif language.lower() == "nodejs" or language.lower() == "javascript":
-            result = subprocess.run(
-                ["node", "-e", code],
-                check=True,
-                text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+        elif language == "bash":
+            process = subprocess.run(
+                ["bash", "-c", code], capture_output=True, text=True
             )
-            return result.stdout
+        elif language == "nodejs":
+            process = subprocess.run(
+                ["node", "-e", code], capture_output=True, text=True
+            )
         else:
-            return f"Unsupported language: {language}"
-    except subprocess.CalledProcessError as e:
-        print(code)
-        return f"Error executing {language} code: {e.stderr}"
+            return "Unsupported language. Please specify 'python', 'bash', or 'nodejs'."
+
+        # Capture output
+        output = process.stdout
+        error = process.stderr
+
+        # Check for exit code and return both stdout and stderr for debugging
+        if process.returncode != 0:
+            return f"Execution failed with error:\n{error.strip()}"
+        elif not output.strip() and not error.strip():
+            return "Execution completed with no output."
+        else:
+            return output.strip() if output else error.strip()
+
     except Exception as e:
-        return f"Error: \n {traceback.format_exc()}"
-        # return f"code: \n{code}\n{traceback.format_exc()}"
+        # Print the full traceback for debugging
+        print("An exception occurred:")
+        traceback.print_exc()  # Print the full traceback
+        return f"An exception occurred: {str(e)}"
