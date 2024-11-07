@@ -25,6 +25,16 @@ bedrock_client = BedRockClient(
     )
 )
 
+groq_client = GroqClient(
+    ClientConfig(
+        model="llama-3.2-90b-vision-preview",
+        # model="llama-3.1-70b-versatile",
+        # model="llama3-70b-8192",
+        temperature=0.2,
+        api_key=os.getenv("GROQ_API_KEY"),
+    )
+)
+
 # llama-3.2-90b-text-preview
 groq_client = GroqClient(
     ClientConfig(
@@ -43,7 +53,8 @@ def transfer_to_engineer(message: str):
 
 
 def transfer_to_advisor(message: str):
-    """This tool enables the planner to obtain troubleshooting guidelines for an issue from the advisor."""
+    """This tool let the planner to obtain troubleshooting guidelines for an issue from the advisor.
+    It should invoke once for a specific issue or task!"""
     return advisor
 
 
@@ -78,7 +89,7 @@ Develop a clear, actionable plan to address issues or tasks in Kubernetes multi-
 
 - Instead of sending individual steps(kubectl command), combine the **related steps into one sub-task** for the engineer. This reduces back-and-forth and enhances efficiency.
 
-- Each sub-task for the engineer should try to equipped with the information: **context**, **intent** and **description**! e.g., "Check the `klusterlet` status for any issues using `kubectl get ...`; `kubectl get ... -oyaml`"
+- Each sub-task for the engineer should try to equipped with the information: **context**, **intent** and **description**! e.g., "Check the `klusterlet-agent` deployment status for any issues using `kubectl describe ...` or `kubectl get ... -oyaml`"
 
 ### 4. Verify After Each Sub-Task Completion:
 

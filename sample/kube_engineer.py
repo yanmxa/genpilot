@@ -15,7 +15,8 @@ load_dotenv()
 
 groq_client = GroqClient(
     ClientConfig(
-        model="llama-3.1-70b-versatile",
+        model="llama-3.2-90b-vision-preview",
+        # model="llama-3.1-70b-versatile",
         # model="llama3-70b-8192",
         temperature=0.2,
         api_key=os.getenv("GROQ_API_KEY"),
@@ -51,7 +52,7 @@ Using kubectl commands and code blocks to interact with Kubernetes via code_exec
 - Unresolved Issues: If the issue remains unresolved after two rounds of the plan, summarize your findings and conclude that no further solutions are available.
 
 
-**Examples:**
+## Examples:##
 
 **Example 0: Just with the code block**
 
@@ -128,6 +129,10 @@ Two pod instances of `<component>`:
 
 Total: 3m CPU, 75Mi memory.
 ```
+
+## Note
+ 
+- Always ensure the code block or command has correct syntax. If needed, make adjustments to correct it! For example, ensure that double quotes and single quotes in the code appear in pairs.
 
 Please add '{FINAL_ANSWER}' in the final answer, once the task is complete or no other action need to apply!
 """,
