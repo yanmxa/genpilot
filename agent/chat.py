@@ -52,8 +52,9 @@ class ChatConsole:
     def thinking(self, messages):
         # chat_console.rule("🤖", characters="~", style="dim")
         # chat_console.print(messages)
+        chat_console.print()
         for msg in messages:
-            chat_console.print(f"    {msg}", style="dim blue")
+            chat_console.print(f"    {msg}", style="cyan")
         chat_console.print()
 
     async def async_thinking(self, messages, finished_event):
@@ -67,7 +68,7 @@ class ChatConsole:
                 # progress.advance(building_task)  # Advance the spinner
             # chat_console.print(messages)
             elapsed_time = progress.tasks[building_task].elapsed
-        chat_console.print(f"[dim][+] Thinking {elapsed_time:.2f}s")
+        chat_console.print(f"[dim][+] {self.name} Thinking {elapsed_time:.2f}s")
         chat_console.print()
 
     def price(self, value):

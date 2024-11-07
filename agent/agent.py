@@ -52,7 +52,7 @@ class Agent(IAgent):
         client,
         action_permission: ActionPermission = ActionPermission.ALWAYS,
         memory: ChatMemory = None,
-        chat_console: ChatConsole = ChatConsole(),
+        chat_console=None,
         max_iter=6,
         max_obs=200,  # max observation content!
         is_terminal=(lambda content: content is not None and FINAL_ANSWER in content),
@@ -66,14 +66,14 @@ class Agent(IAgent):
         self._tools: List[ChatCompletionToolParam] = self.completion_chat_tools(tools)
         self._standalone = True
         self._action_permission = action_permission
-        self._memory = memory
-        self._console = chat_console
+        self._memory = (
+            memory if memory is not None else ChatBufferMemory(memory_id=name, size=10)
+        )
+        self._console = chat_console if chat_console is not None else ChatConsole(name)
         self._max_iter = max_iter
         self._max_obs = max_obs
         self._is_terminal = is_terminal
 
-        if self._memory is None:
-            self._memory = ChatBufferMemory("", size=6)
         self._console.system(self._system)
 
     @property

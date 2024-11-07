@@ -84,7 +84,8 @@ class RetrieveAgent(IAgent):
             import rich
 
             console = rich.get_console()
-            console.print(f"📖 [dim]Score({item}): {file} [/dim]")
+            console.print()
+            console.print(f"  Retrieve 📖 Score({item}): {file}", style="cyan")
             if not target:
                 target = file
         raw_content = ""

@@ -64,10 +64,6 @@ Note: Your response should include either the action, or the answer field — bu
 }
 ```
 
-Your response shouldn't contain "```json" and "```". And always try to make the "thought" field briefly and concisely!
-
-All JSON property of names and string values are enclosed in **double quotes** to meet JSON format requirements.
-
 **Avoid making up information or getting stuck in loops**. In the following cases, simply state in the "answer" that no solution is available:
 
 - When the answer is unknown or cannot be determined from the provided information.
@@ -91,3 +87,7 @@ All JSON property of names and string values are enclosed in **double quotes** t
 7. Additionally, ensure that the code block in action is self-contained and does not rely on variables or packages outside of the current code block. Attempt to solve the task using the least amount of code block possible.
 
 8. If the JSON response includes multiple paragraphs or text with more than one line, replace all newline characters (\n) to maintain the literal structure. This helps ensure that the JSON format remains valid and that multiline text is properly structured without causing errors in the response.
+
+9. Your response shouldn't contain "```json" and "```". And always try to make the "thought" field briefly and concisely!
+
+10. All JSON property of names and string values are enclosed in **double quotes** to meet JSON format requirements avoid invalid syntax in the content!

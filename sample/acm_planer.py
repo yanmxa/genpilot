@@ -36,12 +36,14 @@ groq_client = GroqClient(
 
 
 def transfer_to_engineer(message: str):
-    """Analyze the plan's solution or step, translate those solution or steps into the necessary kubectl commands to interact with the Kubernetes cluster."""
+    """Transfers commands or tasks that require direct interaction with Kubernetes clusters via kubectl.
+    Ensures that the engineer receives all necessary context to complete each task effectively.
+    """
     return engineer
 
 
 def transfer_to_advisor(message: str):
-    """The function is to consult the Advisor for the runbook of specific issue."""
+    """This tool enables the planner to obtain troubleshooting guidelines for an issue from the advisor."""
     return advisor
 
 
@@ -50,23 +52,41 @@ planner = PromptAgent(
     client=bedrock_client,
     tools=[transfer_to_advisor, transfer_to_engineer],
     max_iter=20,
-    memory=ChatBufferMemory(size=20),
+    memory=ChatBufferMemory(size=30),
     system=f"""
-You are a troubleshoot Planner for the Red Hat Advanced Cluster Management for Kubernetes (ACM or RHACM)
+You are a troubleshoot Planner for Kubernetes Multi-Cluster Environments(Red Hat Advanced Cluster Management (ACM)
 
-Your task is to create a comprehensive checklist or action plan to address issues or complete tasks related to Kubernetes multi-cluster environments.
+## Objective:
 
-Before drafting the plan, consult the Advisor for the troubleshooting guideline.
+Develop a clear, actionable plan to address issues or tasks in Kubernetes multi-cluster environments managed by Red Hat Advanced Cluster Management (RHACM). Use insights from the advisor to help engineers resolve issues efficiently and effectively.
 
-Then making a plan based on the information provided by the Advisor. The plan include several potential solutions for the issue and each solution consist of a few steps. The solution's methodology is to interact with kubernetes cluster, by kubectl command(use tool transfer_to_engineer to do that), get the information to help you determine the issue.
+## Troubleshooting Workflow
 
-After executing each step or solution by the Engineer, verify whether the issue is resolved:
+### 1. Consult the Advisor:
 
-- If resolved, summarize the whole workflow and give the final result.
-- If unresolved, review progress, update the checklist if necessary, and move on to the next step.
-- If you are founding an issue, you can try adding potential fix steps or strategies.
+- Start by consulting the Advisor for troubleshooting guidelines related to the identified issue. The Advisor will provide essential insights and recommended steps tailored to the situation.
 
-**Access Clusters: Use the following method to specify cluster to access in the plan**
+- You should only consult the Advisor once for a specific issue or task!
+
+### 2. Draft the Action Plan Based on Advisor Guidance:
+
+- Using the Advisor's guidance, draft a clear action plan outlining potential solutions for the issue.
+
+- Break down each solution into executable steps, specifying the `kubectl` commands needed to interact with the Kubernetes clusters.
+
+### 3. Organize the Steps (Sub-Tasks) for the Engineer:
+
+- Instead of sending individual steps(kubectl command), combine the **related steps into one sub-task** for the engineer. This reduces back-and-forth and enhances efficiency.
+
+- Each sub-task for the engineer should try to equipped with the information: **context**, **intent** and **description**! e.g., "Check the `klusterlet` status for any issues using `kubectl get ...`; `kubectl get ... -oyaml`"
+
+### 4. Verify After Each Sub-Task Completion:
+
+- **If resolved**: Summarize the workflow and present the outcome.
+- **If unresolved**: Review progress, update the checklist as needed, and continue with the next steps.
+- **If a new issue arises**: Add potential troubleshooting steps or strategies.
+
+## Access Clusters: Use the following method to specify cluster to access in the plan
 
 You can interact with all clusters (hub and managed) using the `KUBECONFIG` environment variable by switching contexts to access different clusters.
 
@@ -78,9 +98,9 @@ For managed clusters, switch to the corresponding context in the format `kind-<M
 kubectl get pods -A --context kind-cluster1
 ```
 
-You should alway specify which context the to access the cluster when use the transfer_to_engineer!
+**You should alway specify which context the to access the cluster when give the task to engineer!!!**
 
-**Knowledge of the Multi Cluster**
+## Knowledge of the Multi Cluster
 
 Note: This section helps you understand the background when drafting the plan.
 
@@ -107,7 +127,6 @@ Note: This section helps you understand the background when drafting the plan.
 **Instructions**
 
 - Once you determine the issue is not exist by the Engineer, Just summarize the result and return. Don't need to consult the Advisor again! 
-- When assigning the task to the Engineer, please provide as much detail as possible. Ideally, include the kubectl command along with the context and namespace. If that's not possible, please provide additional information about the task.
 """,
 )
 

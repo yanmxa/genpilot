@@ -21,13 +21,13 @@ Once this issue happens,
 
 - The status of the `Available` condition of all ManagedClusterAddOns for this managed cluster will be set to `Unknown` as well;
 
-## Diagnosis 
+## Diagnosis
 
 The diagnostic instructions may follow two paths: klusterlet resources and controllers
 
-### klusterlet resources
+### klusterlet resource
 
-(1) check the resource on the managed cluster
+(1) check the CR resource on the managed cluster
 
 ```bash
 # Klusterlet CR
@@ -38,7 +38,7 @@ If the above resources is missing, that means the cluster isn't joining to hub c
 
 If they all exists, check the status of the klusterlet
 
-(2) check the status of klusterlet on the managed cluster
+(2) check the status of klusterlet resource on the managed cluster
 
 ```bash
 oc get klusterlet klusterlet --context <managed-cluster-context>  -oyaml
@@ -74,7 +74,7 @@ oc -n open-cluster-management-agent logs -l app=klusterlet-registration-agent --
 
 If the `klusterlet-registration-agent` deployment is not found, then go to the next step to check the klusterlet agent instance. Which is responsible to create the klusterlet registration agent!
 
-(3) Check the klusterlet agent instance
+(3) Check the klusterlet agent controller instance(deployment and pod)
 
 ```bash
 # the deployment
@@ -85,10 +85,10 @@ If the Klusterlet agent instance isn't running, this is why the Klusterlet regis
 
 If the klusterlet agent instance(pod) exists, check the logs of the klusterlet agent.
 
-(4) If the running instance of the pod exist(>0), check the klusterlet agent log on the managed cluster.
+(4) If the running instance of the pod exist(>0), check the klusterlet agent controller log on the managed cluster.
 
 ```bash
 oc -n open-cluster-management logs -l app=klusterlet --context <managed-cluster-context>
 ```
 
-If the klusterlet agent is running and no errors are found in the klusterlet agent log, consider other potential causes for the unknown status.
+If the klusterlet agent controller is running and no errors are found in the klusterlet agent log, consider other potential causes for the unknown status.
