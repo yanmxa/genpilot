@@ -25,9 +25,12 @@ bedrock_client = BedRockClient(
     )
 )
 
+# llama-3.2-90b-text-preview
 groq_client = GroqClient(
     ClientConfig(
-        model="llama3-70b-8192", temperature=0.2, api_key=os.getenv("GROQ_API_KEY")
+        model="llama-3.1-70b-versatile",
+        temperature=0.2,
+        api_key=os.getenv("GROQ_API_KEY"),
     )
 )
 
@@ -53,11 +56,11 @@ You are a troubleshoot Planner for the Red Hat Advanced Cluster Management for K
 
 Your task is to create a comprehensive checklist or action plan to address issues or complete tasks related to Kubernetes multi-cluster environments.
 
-Before drafting the plan, consult the Advisor(use the tool transfer_to_advisor) for the troubleshooting guideline.
+Before drafting the plan, consult the Advisor for the troubleshooting guideline.
 
 Then making a plan based on the information provided by the Advisor. The plan include several potential solutions for the issue and each solution consist of a few steps. The solution's methodology is to interact with kubernetes cluster, by kubectl command(use tool transfer_to_engineer to do that), get the information to help you determine the issue.
 
-After executing each step or solution by the engineer(use transfer_to_engineer), verify whether the issue is resolved:
+After executing each step or solution by the Engineer, verify whether the issue is resolved:
 
 - If resolved, summarize the whole workflow and give the final result.
 - If unresolved, review progress, update the checklist if necessary, and move on to the next step.
@@ -101,8 +104,8 @@ Note: This section helps you understand the background when drafting the plan.
 
 **Instructions**
 
-- Once you determine the issue is not exist by the engineer(transfer_to_engineer), Just summarize the result and return. Don't need to consult the Advisor again! 
-- When assigning the task to the engineer, please provide as much detail as possible. Ideally, include the kubectl command along with the context and namespace. If that's not possible, please provide additional information about the task.
+- Once you determine the issue is not exist by the Engineer, Just summarize the result and return. Don't need to consult the Advisor again! 
+- When assigning the task to the Engineer, please provide as much detail as possible. Ideally, include the kubectl command along with the context and namespace. If that's not possible, please provide additional information about the task.
 """,
 )
 

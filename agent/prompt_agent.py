@@ -123,7 +123,7 @@ class PromptAgent(Agent):
                 f"{content}\n ValidationError:\n {e}",
             )
         except json.decoder.JSONDecodeError as e:
-            # traceback.print_exc()
+            traceback.print_exc()
             self._memory.add(
                 ChatCompletionUserMessageParam(
                     content=f"Validate error in the response: {e}",

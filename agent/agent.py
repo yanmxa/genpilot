@@ -64,7 +64,6 @@ class Agent(IAgent):
         self._functions = self.register_actions(tools)
         # the tools for model
         self._tools: List[ChatCompletionToolParam] = self.completion_chat_tools(tools)
-
         self._standalone = True
         self._action_permission = action_permission
         self._memory = memory

@@ -65,18 +65,16 @@ class ChatConsole:
             while not finished_event.is_set():
                 elapsed_time = progress.tasks[building_task].elapsed
                 await asyncio.sleep(0.1)
-                progress.advance(building_task)  # Advance the spinner
-        # chat_console.print(messages)
-        chat_console.print(
-            f"[dim][+] Thinking {progress.tasks[building_task].elapsed:.2f}s"
-        )
+                # progress.advance(building_task)  # Advance the spinner
+            # chat_console.print(messages)
+            elapsed_time = progress.tasks[building_task].elapsed
+        chat_console.print(f"[dim][+] Thinking {elapsed_time:.2f}s")
         chat_console.print()
 
     def price(self, value):
-        if value:
+        if value is not None and value != "":
             clear_previous_lines()
             chat_console.print(f"[dim][$] {value}")
-            chat_console.print()
 
     def observation(self, message):
         text = Text(f"{message}")

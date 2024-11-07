@@ -15,7 +15,9 @@ load_dotenv()
 
 groq_client = GroqClient(
     ClientConfig(
-        model="llama3-70b-8192", temperature=0.2, api_key=os.getenv("GROQ_API_KEY")
+        model="llama-3.1-70b-versatile",
+        temperature=0.2,
+        api_key=os.getenv("GROQ_API_KEY"),
     )
 )
 

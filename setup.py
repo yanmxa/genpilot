@@ -22,14 +22,15 @@ def read(*paths, **kwargs):
 
 setup(
     name="zen-agent",
-    version="0.1.6",
+    version="0.1.7",
     packages=find_packages(),
-    install_requires=[],
     description="ZenAgent facilitates the creation of AI assistant and the development of advanced multi-agent system.",
     author="Meng Yan",
     author_email="yanmxa@gmail.com",
     include_package_data=True,
+    package_data={"": ["prompt/*"]},
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
+    install_requires=["boto3"],
     url="https://github.com/yanmxa/zen-agent",
 )
