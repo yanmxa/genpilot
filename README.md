@@ -47,7 +47,7 @@
   <details>
   <summary>This demo uses multi-agent troubleshooting for issues in RedHat ACM</summary>
 
-  [![Watch the demo](https://asciinema.org/a/687799.svg)](https://asciinema.org/a/687799)
+  [![Watch the demo](https://asciinema.org/a/687945.svg)](https://asciinema.org/a/687945)
 
   </details>
 
