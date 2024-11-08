@@ -86,7 +86,7 @@ class ChatConsole:
         if len(obs.get("content")) > max_size:
             chat_console.print()
             input = (
-                Prompt.ask("🤔 [dim]Enter [green]s[/green]hort observation[/dim]")
+                Prompt.ask("🤔 [dim][green]S[/green]hort observation[/dim]")
                 .strip()
                 .lower()
             )

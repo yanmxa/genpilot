@@ -79,15 +79,20 @@ class RetrieveAgent(IAgent):
     def _search(self, message):
         results = self.embeddings.search(message, 2)
         target = ""
+        score = 0
         for item in results:
             file = self.documents[item[0]][2]
+            item_score = item[1]
+            if item_score > score:
+                score = item_score
+                target = file
+
             import rich
 
             console = rich.get_console()
             console.print()
-            console.print(f"  Retrieve 📖 Score({item}): {file}", style="cyan")
-            if not target:
-                target = file
+            console.print(f"  Retrieve 📚: {item} - {file}", style="cyan")
+
         raw_content = ""
         with open(target, "r") as f:
             raw_content = f.read()

@@ -4,7 +4,7 @@ import traceback
 
 def code_executor(language, code):
     """
-    The code_executor executes code based on the specified programming language.
+    The code_executor executes code or bash command based on the specified programming language: 'python', 'bash', 'nodejs'.
 
     Args:
         language (str): The programming language in which the code is written ('python', 'bash', 'nodejs').
@@ -49,7 +49,7 @@ def code_executor(language, code):
 
         # Check for exit code and return both stdout and stderr for debugging
         if process.returncode != 0:
-            return f"Execution failed with error:\n{error.strip()}"
+            return f"{error.strip()}"
         elif not output.strip() and not error.strip():
             return "Execution completed with no output."
         else:

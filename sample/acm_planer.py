@@ -1,6 +1,7 @@
 import asyncio
 import os
 import sys
+import argparse
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from agent import Agent, PromptAgent, FINAL_ANSWER
@@ -58,13 +59,55 @@ def transfer_to_advisor(message: str):
     return advisor
 
 
-planner = PromptAgent(
-    name="Planner",
-    client=bedrock_client,
-    tools=[transfer_to_advisor, transfer_to_engineer],
-    max_iter=20,
-    memory=ChatBufferMemory(size=30),
-    system=f"""
+cluster_access = "using the `KUBECONFIG` environment variable the access the cluster"
+
+
+import argparse
+
+
+def parse_args():
+    # Create the parser
+    parser = argparse.ArgumentParser(description="Read cluster access information.")
+
+    # Add the 'cluster-access' argument
+    parser.add_argument(
+        "--cluster-access",
+        type=str,
+        required=False,  # Makes the argument required
+        help="Path to the kubeconfig file for cluster access",
+        default=None,
+    )
+
+    parser.add_argument(
+        "--task",
+        type=str,
+        required=True,  # Makes the argument required
+        help="Path to the kubeconfig file for cluster access",
+        default=None,
+    )
+
+    # Parse the arguments
+    args = parser.parse_args()
+    return args
+
+
+if __name__ == "__main__":
+    args = parse_args()
+    cluster_access_path = args.cluster_access
+    if cluster_access_path:
+        with open(cluster_access_path, "r") as f:
+            cluster_access = f.read()
+    # print(f"{cluster_access}")
+    prompt = args.task
+
+    planner = PromptAgent(
+        debug=False,
+        name="Planner",
+        client=bedrock_client,
+        tools=[transfer_to_advisor, transfer_to_engineer],
+        max_iter=20,
+        memory=ChatBufferMemory(size=30),
+        system=f"""
 You are a troubleshoot Planner for Kubernetes Multi-Cluster Environments(Red Hat Advanced Cluster Management (ACM)
 
 ## Objective:
@@ -85,11 +128,15 @@ Develop a clear, actionable plan to address issues or tasks in Kubernetes multi-
 
 - Break down each solution into executable steps, specifying the `kubectl` commands needed to interact with the Kubernetes clusters.
 
+- Try replacing the `namespace`, `resource name`, or `context` in the advisor's `kubectl` guidance with those from the issue or task at hand!
+
 ### 3. Organize the Steps (Sub-Tasks) for the Engineer:
 
 - Instead of sending individual steps(kubectl command), combine the **related steps into one sub-task** for the engineer. This reduces back-and-forth and enhances efficiency.
 
-- Each sub-task for the engineer should try to equipped with the information: **context**, **intent** and **description**! e.g., "Check the `klusterlet-agent` deployment status for any issues using `kubectl describe ...` or `kubectl get ... -oyaml`"
+- Each sub-task for the engineer should try to equipped with the information: **context**, **intent** and **description**! 
+
+- Sub-Task Sample: "Check whether the `klusterlet` deployment exists on managed cluster. If it exist, then check the status for any issues using `kubectl describe ...` or `kubectl get ... -oyaml`"
 
 - You should not deliver a repeat sub-task to the engineer, So you need the remember the result of the engineer give it to you!
 
@@ -101,17 +148,7 @@ Develop a clear, actionable plan to address issues or tasks in Kubernetes multi-
 
 ## Access Clusters: Use the following method to specify cluster to access in the plan
 
-You can interact with all clusters (hub and managed) using the `KUBECONFIG` environment variable by switching contexts to access different clusters.
-
-Each of these clusters is created using KinD. To access the hub cluster, use the `kind-hub` context.
-
-For managed clusters, switch to the corresponding context in the format `kind-<ManagedCluster>`. For example, to retrieve all pods on `cluster1`, use the following command:
-
-```bash
-kubectl get pods -A --context kind-cluster1
-```
-
-**You should alway specify which context the to access the cluster when give the task to engineer!!!**
+{cluster_access}
 
 ## Knowledge of the Multi Cluster
 
@@ -142,9 +179,5 @@ Note: This section helps you understand the background when drafting the plan.
 - Once you determine the issue is not exist by the Engineer, Just summarize the result and return. **Don't consult the Advisor more than once** for a specific issue or task!!! 
 
 """,
-)
-
-
-if __name__ == "__main__":
-    prompt = sys.argv[1]
+    )
     asyncio.run(planner.run(prompt))
