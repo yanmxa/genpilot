@@ -46,7 +46,7 @@ oc get klusterlet klusterlet --context <managed-cluster-context>  -oyaml
 
 The status maybe contain the information why the klusterlet registration agent (`deploy/klusterlet-registration-agent -n open-cluster-management-agent`) cann't update the cluster lease in the hub. 
 
-A common issue is an invalid `hub-kubeconfig-secret` used to connect to the hub cluster. However, it's essential to first identify the root cause when the Klusterlet registration and Klusterlet agent are not functioning as expected.
+A common issue is an invalid secret `secret/hub-kubeconfig-secret -n open-cluster-management-agent --context <managed-cluster-context>` on the managed cluster used to connect to the hub cluster. However, it's essential to first identify the root cause when the Klusterlet registration and Klusterlet agent are not functioning as expected.
 
 If there are no obvious error in the klusterlet status, consider other potential causes for the unknown status.
 
@@ -81,9 +81,9 @@ If the `klusterlet-registration-agent` deployment is not found, then go to the n
 oc -n open-cluster-management get deploy/klusterlet --context <managed-cluster-context>
 ```
 
-If the Klusterlet agent instance isn't running, this is why the Klusterlet registration agent instance is not operational! Then get the deployment detail(like `oc describe deploy/klusterlet ...`) of the klusterlet agent to find why the instance hasn't running and return the result.
+If the klusterlet agent controller instance isn't running, this is why the klusterlet registration agent instance is not operational! Then get the deployment detail(like `oc describe deploy/klusterlet ...`) of the klusterlet agent controller to find why the instance hasn't running and return the result.
 
-If the klusterlet agent instance(pod) exists, check the logs of the klusterlet agent.
+If the klusterlet agent controller(pod) exists, check the logs of the klusterlet agent controller.
 
 (4) If there is an instance of the klusterlet agent controller running on the managed cluster, check its logs on the managed cluster.
 

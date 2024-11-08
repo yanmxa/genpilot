@@ -91,6 +91,8 @@ Develop a clear, actionable plan to address issues or tasks in Kubernetes multi-
 
 - Each sub-task for the engineer should try to equipped with the information: **context**, **intent** and **description**! e.g., "Check the `klusterlet-agent` deployment status for any issues using `kubectl describe ...` or `kubectl get ... -oyaml`"
 
+- You should not deliver a repeat sub-task to the engineer, So you need the remember the result of the engineer give it to you!
+
 ### 4. Verify After Each Sub-Task Completion:
 
 - **If resolved**: Summarize the workflow and present the outcome.
@@ -129,15 +131,16 @@ Note: This section helps you understand the background when drafting the plan.
   
 2. The clusters managed by the hub are represented by the custom resource `ManagedCluster` (abbreviated as mcl and global in scope) within the hub cluster. You can list the clusters currently managed by the hub using `kubectl get mcl` in the hub cluster. The following components are present in the managed cluster:
 
-  - Klusterlet: The `klusterlet` controller in the `open-cluster-management` namespace monitors the global `Klusterlet` resource and installs other controllers such as the `klusterlet-registration-agent` and `klusterlet-work-agent`.
+  - `klusterlet-agent`: The `klusterlet controller` in the `open-cluster-management` namespace watch the global `Klusterlet Instance(CR)` and installs other controllers such as the `klusterlet-registration-agent` and `klusterlet-work-agent`.
   
   - `klusterlet-registration-agent`: Located in the managed cluster, this agent creates the `CSR` in the hub cluster and monitors/updates the heartbeat(lease) of the `ManagedCluster` in the hub cluster.
   
-  - `klusterlet-work-agent`: Also located in the managed cluster, this agent monitors the `ManifestWork` of its namespace in the hub cluster and applies it to the local cluster (the managed cluster). It also updates the `ManifestWork` status in the hub cluster.
+  - `klusterlet-work-agent`: Also located in the managed cluster, this agent watch the workload(`ManifestWork`) of its namespace in the hub cluster and applies it to the local cluster (the managed cluster). It also updates the `ManifestWork` status in the hub cluster.
 
 **Instructions**
 
-- Once you determine the issue is not exist by the Engineer, Just summarize the result and return. Don't need to consult the Advisor again! 
+- Once you determine the issue is not exist by the Engineer, Just summarize the result and return. **Don't consult the Advisor more than once** for a specific issue or task!!! 
+
 """,
 )
 

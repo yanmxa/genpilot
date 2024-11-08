@@ -25,7 +25,9 @@ current_dir = os.path.dirname(os.path.realpath(__file__))
 
 class PromptAgent(Agent):
 
-    def __init__(self, client, name, system, tools=[], max_iter=6, memory=None):
+    def __init__(
+        self, client, name, system, tools=[], max_iter=6, memory=None, debug=True
+    ):
         system = build_from_template(
             os.path.join(current_dir, "..", "prompt", "prompt_agent.md"),
             {
@@ -35,6 +37,7 @@ class PromptAgent(Agent):
         )
         system += self._tool_markdown(tools)
         super().__init__(name, system, tools, client, max_iter=max_iter, memory=memory)
+        self._debug = debug
 
     def _tool_markdown(self, tools) -> str:
         system_tool_content = ["## Available Tools:\n"]
@@ -111,8 +114,9 @@ class PromptAgent(Agent):
                     f"can't parse validate action, thought, or answer from the response",
                 )
         except ValidationError as e:
-            traceback.print_exc()
-            print(chat_message)
+            if self._debug:
+                traceback.print_exc()
+                print(chat_message)
             self._memory.add(
                 ChatCompletionUserMessageParam(
                     content=f"ValidationError in the response: {e}",
@@ -124,8 +128,9 @@ class PromptAgent(Agent):
                 f"{content}\n ValidationError:\n {e}",
             )
         except json.decoder.JSONDecodeError as e:
-            traceback.print_exc()
-            print(chat_message)
+            if self._debug:
+                traceback.print_exc()
+                print(chat_message)
             self._memory.add(
                 ChatCompletionUserMessageParam(
                     content=f"JSONDecodeError in the response: {e}",

@@ -4,11 +4,11 @@ import traceback
 
 def code_executor(language, code):
     """
-    Executes code based on the specified programming language.
+    The code_executor executes code based on the specified programming language.
 
     Args:
         language (str): The programming language in which the code is written ('python', 'bash', 'nodejs').
-        code (str): The actual code to be executed as a string.
+        code (str): The actual code to be executed as a string. Like shell command(kubectl, oc, ...), python code, and nodejs code.
 
     Returns:
         str: The result of the code execution or an error message.
