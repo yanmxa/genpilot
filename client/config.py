@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass
 from typing import Dict, Optional
+import instructor
 
 
 @dataclass
@@ -12,3 +13,4 @@ class ClientConfig:
     price_1k_token_in: Optional[int] = 0
     price_1k_token_out: Optional[int] = 0
     ext: Optional[Dict[str, str]] = None
+    mode: instructor.Mode | None = None

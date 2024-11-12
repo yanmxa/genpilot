@@ -13,7 +13,7 @@ from openai.types.chat import (
     ChatCompletionToolMessageParam,
     ChatCompletionAssistantMessageParam,
 )
-from type import ChatMessage, StatusCode
+from type import ChatMessage, StatusCode, ChatMessage
 from tool import func_metadata, build_from_template
 from .agent import Agent
 import traceback
@@ -36,7 +36,15 @@ class PromptAgent(Agent):
             },
         )
         system += self._tool_markdown(tools)
-        super().__init__(name, system, tools, client, max_iter=max_iter, memory=memory)
+        super().__init__(
+            name,
+            system,
+            tools=[],
+            client=client,
+            max_iter=max_iter,
+            memory=memory,
+            response_model=ChatMessage,
+        )
         self._debug = debug
 
     def _tool_markdown(self, tools) -> str:
@@ -63,15 +71,15 @@ class PromptAgent(Agent):
         self, chat_message: ChatCompletionMessage
     ) -> Tuple[StatusCode, str]:
         try:
-            decoder = json.JSONDecoder()
+            # decoder = json.JSONDecoder()
             content = chat_message.content
-            json_content, _ = decoder.raw_decode(content.strip())
-
-            chat_message: ChatMessage = ChatMessage.model_validate(json_content)
+            # json_content, _ = decoder.raw_decode(content.strip())
+            # chat_message: ChatMessage = ChatMessage.model_validate(json_content)
+            chat_message: ChatMessage = ChatMessage.model_validate_json(content)
 
             if chat_message.thought:
                 self._console.thinking(chat_message.thought)
-            if chat_message.action:
+            if chat_message.action and chat_message.action.name != "":
                 func_name = chat_message.action.name
                 func_args = chat_message.action.args
                 func_edit = chat_message.action.edit

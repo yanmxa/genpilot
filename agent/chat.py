@@ -75,6 +75,7 @@ class ChatConsole:
         if value is not None and value != "":
             clear_previous_lines()
             chat_console.print(f"[dim][$] {value}")
+            chat_console.print()
 
     def observation(self, message):
         text = Text(f"{message}")
@@ -133,6 +134,8 @@ class ChatConsole:
                 continue
             elif "/clear" in user_input:
                 memory.clear()
+                continue
+            elif user_input == "":
                 continue
             else:
                 return user_input

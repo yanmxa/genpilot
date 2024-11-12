@@ -7,6 +7,7 @@ from tool import code_executor
 from agent import PromptAgent
 from client import BedRockClient, GroqClient, ClientConfig
 from dotenv import load_dotenv
+import instructor
 
 load_dotenv()
 
@@ -16,6 +17,15 @@ bedrock_client = BedRockClient(
         price_1k_token_in=0.002,  # $0.002 per 1000 input tokens
         price_1k_token_out=0.002,
         ext={"inference_config": {"maxTokens": 2000, "temperature": 0.2}},
+    )
+)
+
+groq_client = GroqClient(
+    ClientConfig(
+        model="llama3-70b-8192",
+        temperature=0.2,
+        api_key=os.getenv("GROQ_API_KEY"),
+        mode=instructor.Mode.JSON,
     )
 )
 

@@ -15,7 +15,7 @@ from openai.types.chat import (
 
 from txtai.embeddings import Embeddings
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from agent import IAgent
 

@@ -3,14 +3,14 @@ import os
 import sys
 import argparse
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from agent import Agent, PromptAgent, FINAL_ANSWER
 from client import GroqClient, BedRockClient, ClientConfig
 from tool import code_executor
 from memory import ChatBufferMemory
 
-from retrieve_agent import advisor
-from kube_engineer import engineer
+from sample.acm.advisor import advisor
+from sample.acm.engineer import engineer
 
 from dotenv import load_dotenv
 

@@ -1,16 +1,19 @@
 from pydantic import BaseModel, Field
 import typing
-from typing import Optional, List, Any, Dict
+from typing import Optional, List, Any, Dict, Union
 
 
 class ChatAction(BaseModel):
-    name: str = Field(..., description="The tool name used for the action")
+    name: str = Field(
+        ...,
+        description="The name of the tool used for this action. Leave this field empty if no tool is available or if providing a direct answer.",
+    )
     edit: int = Field(
         0,
-        description="Whether the tool or action will update your system or environment, if it is, then return 1, else return 0",
+        description="Indicates whether the action will modify the system or environment: set to 1 if it will, otherwise set to 0.",
     )
     args: Optional[Dict[str, Any]] = Field(
-        {}, description="The arguments passed to the tool."
+        {}, description="Arguments to be passed to the tool."
     )
 
 
@@ -18,15 +21,15 @@ class ChatAction(BaseModel):
 class ChatMessage(BaseModel):
     thought: List[str] = Field(
         ...,  # required
-        description="Represents your thought process regarding the current task. This field is used to plan the solution and outline the next steps. Print paragraphs with appropriate delimiters to make your ideas clearer",
+        description="Your thought process regarding the current task or issue.",
     )
 
     answer: Optional[str] = Field(
         None,
-        description="At the end of the task, give the final answer for initial question or task. Then the thought should be the summarization of the whole process!",
+        description="Provide the final answer to the question or task here. If a tool is being used, leave this field empty.",
     )
 
     action: Optional[ChatAction] = Field(
         None,
-        description="Describes the tool needed to gather knowledge or perform actions.",
+        description="Specifies the tool to be used. Leave this field empty if no tool is available or if providing a direct answer.",
     )

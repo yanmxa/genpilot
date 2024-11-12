@@ -23,6 +23,7 @@ from tool import (
 from type import StatusCode, ActionPermission
 from memory import ChatMemory, ChatBufferMemory
 from .chat import ChatConsole
+import instructor
 
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -48,14 +49,15 @@ class Agent(IAgent):
         self,
         name,
         system,
-        tools,
         client,
+        tools=[],
         action_permission: ActionPermission = ActionPermission.ALWAYS,
         memory: ChatMemory = None,
         chat_console=None,
         max_iter=6,
         max_obs=200,  # max observation content!
         is_terminal=(lambda content: content is not None and FINAL_ANSWER in content),
+        response_model=None,
     ):
         self._name = name
         self._client = client
@@ -76,6 +78,8 @@ class Agent(IAgent):
 
         self._console.system(self._system)
 
+        self._response_model = response_model
+
     @property
     def name(self):
         return self._name
@@ -93,7 +97,7 @@ class Agent(IAgent):
 
         finished_event = asyncio.Event()
         model_thinking_task = asyncio.create_task(
-            self.async_wrapper_client(new_messages, self._tools)
+            self.async_wrapper_client(new_messages, self._tools, self._response_model)
         )
         console_thinking_task = asyncio.create_task(
             self._console.async_thinking(new_messages, finished_event)
@@ -249,8 +253,8 @@ class Agent(IAgent):
 
         return StatusCode.OBSERVATION, observation
 
-    async def async_wrapper_client(self, messages, tools):
-        return await asyncio.to_thread(self._client, messages, tools)
+    async def async_wrapper_client(self, messages, tools, response_mode):
+        return await asyncio.to_thread(self._client, messages, tools, response_mode)
 
     # https://github.com/openai/openai-python/blob/main/src/openai/types/chat/chat_completion_message_param.py
     # https://github.com/openai/openai-python/blob/main/src/openai/types/chat/chat_completion_tool_param.py
