@@ -46,6 +46,8 @@ class PromptAgent(Agent):
             response_model=ChatMessage,
         )
         self._debug = debug
+        # registered the tools for the agent to be invoked
+        self._functions = self.register_actions(tools)
 
     def _tool_markdown(self, tools) -> str:
         system_tool_content = ["## Available Tools:\n"]

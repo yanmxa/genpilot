@@ -52,7 +52,7 @@ class ChatConsole:
     def thinking(self, messages):
         # chat_console.rule("🤖", characters="~", style="dim")
         # chat_console.print(messages)
-        chat_console.print()
+        # chat_console.print()
         for msg in messages:
             chat_console.print(f"    {msg}", style="cyan")
         chat_console.print()

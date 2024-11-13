@@ -33,7 +33,8 @@ if __name__ == "__main__":
         Agent(
             client=bedrock_client,
             name="Assistant AI",
-            system="You are an assistant to solve tasks, Before give a tool or function action, please give a assistant response to show your thought about it",
+            system="""You are an assistant to solve tasks, Before give a tool or function action, please give a assistant response to show your thought about it. If it is a code block, use the 'code_executor' tool!
+            """,
             tools=[wikipedia, code_executor],
         ).run(prompt)
     )

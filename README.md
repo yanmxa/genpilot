@@ -54,7 +54,7 @@
 
 #### Addons Aren't Created
 
-[![Watch the demo](https://asciinema.org/a/687992.svg)](https://asciinema.org/a/687992)
+[![Watch the demo](https://asciinema.org/a/689439.svg)](https://asciinema.org/a/689439)
 
 </details>
 

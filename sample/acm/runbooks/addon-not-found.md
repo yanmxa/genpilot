@@ -26,7 +26,7 @@ will not be processed.
 
 ## Diagnosis
 
-Check if the `KlusterletAddonConfig` with name `<cluster-name>` exists on the hub cluster.
+Check if the `KlusterletAddonConfig` with name `<cluster-name>` and namespace `<cluster-name>` exists on the hub cluster.
 
 ```shell
 oc get klusterletaddonconfig -n <cluster-name> <cluster-name>
@@ -43,6 +43,11 @@ If the name of the KlusterletAddonConfig resource is not the same as the cluster
 If the KlusterletAddonConfig is found, check the `spec.<addon-name>.enabled` field, the `enabled` field should be true, e.g.
 
 ```yaml
+apiVersion: agent.open-cluster-management.io/v1
+kind: KlusterletAddonConfig
+metadata:
+  name: <cluster-name>
+  namespace: <cluster-name>
 spec:
   applicationManager:
     enabled: true

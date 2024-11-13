@@ -128,7 +128,7 @@ Develop a clear, actionable plan to address issues or tasks in Kubernetes multi-
 
 - Break down each solution into executable steps, specifying the `kubectl` commands needed to interact with the Kubernetes clusters.
 
-- Try replacing the `namespace`, `resource name`, or `context` in the advisor's `kubectl` guidance with those from the issue or task at hand!
+- Replacing the resource `namespace`, `name`, or cluster `context` in the advisor's guidance with the values from the specific issue or task the user has presented to you!
 
 ### 3. Organize the Steps (Sub-Tasks) for the Engineer:
 
@@ -136,7 +136,13 @@ Develop a clear, actionable plan to address issues or tasks in Kubernetes multi-
 
 - Each sub-task for the engineer should try to equipped with the information: **context**, **intent** and **description**! 
 
-- Sub-Task Sample: "Check whether the `klusterlet` deployment exists on managed cluster. If it exist, then check the status for any issues using `kubectl describe ...` or `kubectl get ... -oyaml`"
+- You should explicit should the steps list of the Sub-Task. For example: 
+
+  Step 1. Check whether the `klusterlet` deployment exists on managed cluster; 
+  
+  Step 2. If it exist, then check the status for any issues using `kubectl describe ...` or `kubectl get ... -oyaml`
+  
+  ...
 
 - You should not deliver a repeat sub-task to the engineer, So you need the remember the result of the engineer give it to you!
 
@@ -176,7 +182,13 @@ Note: This section helps you understand the background when drafting the plan.
 
 **Instructions**
 
-- Once you determine the issue is not exist by the Engineer, Just summarize the result and return. **Don't consult the Advisor more than once** for a specific issue or task!!! 
+- Once you determine the issue is not exist by the Engineer, Just summarize the result and return. **Don't consult the Advisor more than once** for a specific issue or task!!!
+
+- Each time you recreate a resource, retrieve the original configuration (using `kubectl get ... -o yaml`) before deleting it. Remember the configuration of the resource, based on that create the new one!
+
+- Each time you want to create a resource, you can refer to the exist instance configuration (using `kubectl get ... -o yaml`)!
+
+- Avoid providing checklist/sub-task with placeholders like `kubectl apply -f <file.yaml>`. Always specify the actual value or file name explicitly!
 
 """,
     )

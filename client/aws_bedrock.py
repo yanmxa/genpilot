@@ -99,16 +99,39 @@ class BedRockClient:
         while len(message_list) > 0 and message_list[0]["role"] != "user":
             message_list.pop(0)
 
-        tool_list = convert_to_tool_list(tools)
-
         # rich.get_console().print(message_list)
-        response = self._boto3_client.converse(
-            modelId=self.model_id,
-            messages=message_list,
-            system=system_message,
-            inferenceConfig=self.inference_config,
-            toolConfig={"tools": tool_list},
-        )
+
+        tool_list = convert_to_tool_list(tools)
+        # Prepare the arguments for the converse call
+
+        converse_args = {
+            "modelId": self.model_id,
+            "messages": message_list,
+            "system": system_message,
+            "inferenceConfig": self.inference_config,
+        }
+        # Add toolConfig if tool_list is not empty
+        if tool_list:
+            converse_args["toolConfig"] = {"tools": tool_list}
+
+        # Call the converse method with the prepared arguments
+        response = self._boto3_client.converse(**converse_args)
+
+        # if len(tool_list) > 0:
+        #     response = self._boto3_client.converse(
+        #         modelId=self.model_id,
+        #         messages=message_list,
+        #         system=system_message,
+        #         inferenceConfig=self.inference_config,
+        #         toolConfig={"tools": tool_list},
+        #     )
+        # else:
+        #     response = self._boto3_client.converse(
+        #         modelId=self.model_id,
+        #         messages=message_list,
+        #         system=system_message,
+        #         inferenceConfig=self.inference_config,
+        #     )
 
         # price
         usage = response["usage"]

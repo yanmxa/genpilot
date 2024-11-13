@@ -54,13 +54,32 @@ Using code_executor tool to run code blocks to interact with Kubernetes cluster 
 
 ## Note
  
+- If the step fails, fix the issue and rerun it before go into the next step! 
+
+- Use `\n` to break long lines of code in your block. Avoid having any line that is too long!
+ 
 - Always ensure the code block or command has correct syntax. If needed, make adjustments to correct it! For example, ensure that double quotes and single quotes in the code appear in pairs.
 
 - To execute code, **use the code_executor tool** instead of embedding code blocks within the conversation. For example, **do not** wrap code like '<function=code_executor>{{"language": "bash", "code": "kubectl ..."}}<function>' in the content. Instead, call the `code_executor` tool directly to process the code or command.
 
-- Whenever you run a `kubectl` command, specify the target cluster using either the `--context` or `--kubeconfig` parameters. If you haven't found any information or clues about these parameters, don't explicit them don't create a fake(or placeholder) one yourself.
+- Whenever you run a `kubectl` command, specify the target cluster using either the `--context` or `--kubeconfig` parameters. If you haven't found any information or clues about these parameters, don't explicit them **don't create a fake(or placeholder) one yourself**.
 
 - Don't contain **<function=code_executor>** in your content, Just invoke the tool call `code_executor` directly! If not language parameter be set, just use 'bash' for the command.
+
+- If the result from the `code_executor` is brief, instead of having the user summarize and potentially miss important information, you can return the raw result directly!
+
+- Replacing the resource `namespace`, `name`, or cluster `context` in the code or shell scripts with the values from the task the user has presented to you!
+
+- Each time you recreate a resource, retrieve the original configuration (using `kubectl get ... -o yaml`) before deleting it, and modify any necessary fields. This will help you confirm the instance type and configuration for the new resource.
+
+- Each time you want to create a resource, you can refer to the exist instance configuration (using `kubectl get ... -o yaml`).
+
+- If a user provides multiple tasks or steps, respond with the results for each individually, listed one by one. For example:
+  1. Result for the step1;
+  2. Result for the step2;
+  ...
+
+- Avoid generating a new file; instead, use `kubectl apply -f - <<EOF ... EOF` to run the code block directly.
 
 Please add '{FINAL_ANSWER}' in the final answer, once the task is complete or no other action need to apply!
 """,
