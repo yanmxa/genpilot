@@ -24,5 +24,9 @@ class ChatMemory(ABC):
         pass
 
     @abstractmethod
+    def pop(self) -> ChatCompletionMessageParam:
+        pass
+
+    @abstractmethod
     def clear(self) -> None:
         pass

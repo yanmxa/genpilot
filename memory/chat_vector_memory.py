@@ -93,6 +93,9 @@ class ChatVectorMemory(ChatMemory):
     def clear(self) -> None:
         self._messages = []
 
+    def pop(self, index=-1) -> ChatCompletionMessageParam:
+        return self._messages.pop(index)
+
     def _target_vector_message(
         self, message: ChatCompletionMessageParam | ChatCompletionMessage
     ) -> bool:

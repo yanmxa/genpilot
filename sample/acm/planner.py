@@ -9,13 +9,15 @@ from client import GroqClient, BedRockClient, ClientConfig
 from tool import code_executor
 from memory import ChatBufferMemory
 
-from sample.acm.advisor import advisor
+from sample.acm.advisor import RetrieveAgent
 from sample.acm.engineer import engineer
+
 
 from dotenv import load_dotenv
 
 load_dotenv()
 
+current_dir = os.path.dirname(os.path.realpath(__file__))
 
 bedrock_client = BedRockClient(
     ClientConfig(
@@ -45,24 +47,8 @@ groq_client = GroqClient(
     )
 )
 
-
-def transfer_to_engineer(message: str):
-    """Transfers commands or tasks that require direct interaction with Kubernetes clusters via kubectl.
-    Ensures that the engineer receives all necessary context to complete each task effectively.
-    """
-    return engineer
-
-
-def transfer_to_advisor(message: str):
-    """This tool let the planner to obtain troubleshooting guidelines for an issue from the advisor.
-    It should invoke once for a specific issue or task!"""
-    return advisor
-
-
-cluster_access = "using the `KUBECONFIG` environment variable the access the cluster"
-
-
 import argparse
+from agent.agent import IAgent
 
 
 def parse_args():
@@ -71,10 +57,18 @@ def parse_args():
 
     # Add the 'cluster-access' argument
     parser.add_argument(
-        "--cluster-access",
+        "--cluster-access-file",
         type=str,
         required=False,  # Makes the argument required
-        help="Path to the kubeconfig file for cluster access",
+        help="File to the kubeconfig file for cluster access",
+        default=None,
+    )
+
+    parser.add_argument(
+        "--runbook-dir",
+        type=str,
+        required=False,  # Makes the argument required
+        help="The dir of runbooks for the advisor agent",
         default=None,
     )
 
@@ -88,17 +82,51 @@ def parse_args():
 
     # Parse the arguments
     args = parser.parse_args()
-    return args
+
+    cluster_access = "using the `KUBECONFIG` variable to access the cluster"
+    if args.cluster_access_file:
+        with open(args.cluster_access_file, "r") as f:
+            cluster_access = f.read()
+
+    runbook_dir = os.path.join(current_dir, "runbooks")
+    if args.runbook_dir:
+        runbook_dir = args.runbook_dir
+
+    task = args.task
+
+    return {
+        "cluster_access": cluster_access,
+        "runbook_dir": runbook_dir,
+        "task": task,
+    }
+
+
+agents = {
+    "engineer": engineer,
+    "advisor": None,
+}
+
+
+def transfer_to_engineer(message: str) -> IAgent:
+    """Transfers commands or tasks that require direct interaction with Kubernetes clusters via kubectl.
+    Ensures that the engineer receives all necessary context to complete each task effectively.
+    """
+    return agents["advisor"]
+
+
+def transfer_to_advisor(message: str) -> Agent:
+    """This tool let the planner to obtain troubleshooting guidelines for an issue from the advisor.
+    It should invoke once for a specific issue or task!"""
+    return agents["advisor"]
 
 
 if __name__ == "__main__":
     args = parse_args()
-    cluster_access_path = args.cluster_access
-    if cluster_access_path:
-        with open(cluster_access_path, "r") as f:
-            cluster_access = f.read()
-    # print(f"{cluster_access}")
-    prompt = args.task
+    cluster_access = args["cluster_access"]
+    task = args["task"]
+
+    advisor = RetrieveAgent("advisor", args["runbook_dir"])
+    agents["advisor"] = advisor
 
     planner = PromptAgent(
         debug=False,
@@ -192,4 +220,4 @@ Note: This section helps you understand the background when drafting the plan.
 
 """,
     )
-    asyncio.run(planner.run(prompt))
+    asyncio.run(planner.run(task))

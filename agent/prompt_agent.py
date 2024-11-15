@@ -69,7 +69,7 @@ class PromptAgent(Agent):
     # https://github.com/openai/openai-python/blob/main/src/openai/types/chat/chat_completion_tool_param.py
     # https://platform.openai.com/docs/guides/function-calling
 
-    async def _action_observation(
+    async def _answer_observation(
         self, chat_message: ChatCompletionMessage
     ) -> Tuple[StatusCode, str]:
         try:
@@ -93,8 +93,12 @@ class PromptAgent(Agent):
                     )
 
                 # validate the permission
-                if not self._console.check_action(
-                    self._action_permission, func_name, func_args, func_edit=func_edit
+                if not self._console.before_action(
+                    self._action_permission,
+                    func_name,
+                    func_args,
+                    func_edit=func_edit,
+                    functions=self._functions,
                 ):
                     return StatusCode.ACTION_FORBIDDEN, "Action cancelled by the user."
 
@@ -106,7 +110,7 @@ class PromptAgent(Agent):
                     observation = "no result found the action"
 
                 self._memory.add(
-                    self._console.check_observation(
+                    self._console.after_action(
                         ChatCompletionUserMessageParam(
                             role="user", content=f"{observation}"
                         ),

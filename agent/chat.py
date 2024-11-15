@@ -17,13 +17,14 @@ from type import ActionPermission
 from rich.console import Console
 from memory import ChatMemory
 from rich.markdown import Markdown
-
+from .interface import IAgent, IChat
 
 chat_console = rich.get_console()
 
 
-class ChatConsole:
+class ChatConsole(IChat):
     def __init__(self, name="AgentConsole"):
+        self._before_thinking = False
         self.name = name
 
     def system(self, str) -> None:
@@ -83,7 +84,7 @@ class ChatConsole:
         chat_console.print(text)
         # chat_console.print(f"{message}", style="italic dim")
 
-    def check_observation(self, obs: ChatCompletionMessageParam, max_size):
+    def after_action(self, obs: ChatCompletionMessageParam, max_size):
         if len(obs.get("content")) > max_size:
             chat_console.print()
             input = (
@@ -108,41 +109,80 @@ class ChatConsole:
                 return ChatCompletionUserMessageParam(role="user", content=f"{input}")
         return obs
 
-    def ask_input(self, system, memory: ChatMemory, tools=None) -> str:
+    def _ask_input(
+        self,
+        memory: ChatMemory,
+        system=None,
+        tools=None,
+        name=None,
+        prompt_ask="🧘 [dim]Enter[/dim] [red]exit[/red][dim] or prompt[/dim]",
+        skip_inputs=[],
+        ignore_inputs=[""],  # Skip empty input by default
+    ) -> bool:
         while True:
-            user_input = (
-                Prompt.ask("🧘 [dim]Enter[/dim] [red]exit[/red][dim] or prompt[/dim]")
-                .strip()
-                .lower()
-            )
+            # Prompt the user for input
+            user_input = Prompt.ask(prompt_ask).strip().lower()
             print()
-            if user_input in {"exit", "e"}:
-                chat_console.print("👋 [blue]Goodbye![/blue]")
-                break
-            elif user_input == "/debug":  # print the whole information
-                messages = memory.get(system)
-                chat_console.print(messages)
-                if tools:
-                    chat_console.print(tools)
-                continue
-            elif "/memorize" in user_input or "/m" in user_input:
-                input = user_input.replace("/memorize", "").replace("/m", "").strip()
-                memory.add(
-                    ChatCompletionUserMessageParam(content=input, role="user"),
-                    persistent=True,
-                )
-                continue
-            elif "/clear" in user_input:
-                memory.clear()
-                continue
-            elif user_input == "":
-                continue
-            else:
-                return user_input
 
-    def answer(self, result):
-        result = result.strip()
+            if user_input in skip_inputs:
+                return True
+
+            if user_input in ignore_inputs:
+                continue
+
+            match user_input:
+                case "exit" | "e":
+                    chat_console.print("👋 [blue]Goodbye![/blue]")
+                    return False
+
+                case "/debug":
+                    chat_console.print(memory.get(system))
+                    if tools:
+                        chat_console.print(tools)
+                    continue
+
+                case "/pop":
+                    memory.pop()
+                    chat_console.print(memory.get(system))
+                    continue
+
+                case "/add" | "/a":
+                    input_content = (
+                        user_input.replace("/add", "").replace("/a", "").strip()
+                    )
+                    if input_content:
+                        memory.add(
+                            ChatCompletionUserMessageParam(
+                                content=input_content, role="user", name=name
+                            )
+                        )
+                    continue
+
+                case "/clear":
+                    memory.clear()
+                    continue
+
+                case _:
+
+                    # Add the user input to memory and return it
+                    memory.add(
+                        ChatCompletionUserMessageParam(
+                            content=user_input, role="user", name=name
+                        )
+                    )
+                    return True
+
+    def before_thinking(self, memory: ChatMemory) -> bool:
+        if not self._before_thinking:
+            return True
+        return self._ask_input(memory, skip_inputs=["", "yes", "approve"])
+
+    def answer(self, memory: ChatMemory) -> bool:
+        lastChatMessage: ChatCompletionMessageParam = memory.get(None)[-1]
+        result = lastChatMessage.get("content").strip()
         chat_console.print(f"✨ {result} \n", style="bold green")
+
+        return self._ask_input(memory, name="user")
 
     def thought(self, result):
         chat_console.print(f"💭 {result} \n", style="blue")
@@ -154,7 +194,16 @@ class ChatConsole:
     def overload(self, max_iter):
         chat_console.print(f"💣 [red]Reached maximum iterations: {max_iter}![/red]\n")
 
-    def check_action(self, permission, func_name, func_args, func_edit=0):
+    def before_action(
+        self, permission, func_name, func_args, func_edit=0, functions={}
+    ) -> bool:
+        # check the agent function
+        func = functions[func_name]
+        return_type = func.__annotations__.get("return")
+        if return_type is not None and issubclass(return_type, IAgent):
+            # TODO: add other information
+            return True
+
         tool_info = f"🛠  [yellow]{func_name}[/yellow] - [dim]{func_args}[/dim]"
         if func_name == "code_executor":
             chat_console.print(

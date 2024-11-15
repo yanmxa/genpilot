@@ -22,25 +22,13 @@ from tool import (
 )
 from type import StatusCode, ActionPermission
 from memory import ChatMemory, ChatBufferMemory
-from .chat import ChatConsole
 import instructor
+from .interface import IAgent
+from .chat import ChatConsole
 
 
 current_dir = os.path.dirname(os.path.realpath(__file__))
 FINAL_ANSWER = "ANSWER:"
-
-
-class IAgent(ABC):
-    @property
-    @abstractmethod
-    def name(self):
-        pass
-
-    @abstractmethod
-    async def run(
-        self, message: Union[ChatCompletionMessageParam, str]
-    ) -> ChatCompletionAssistantMessageParam | None:
-        pass
 
 
 class Agent(IAgent):
@@ -84,13 +72,8 @@ class Agent(IAgent):
     def name(self):
         return self._name
 
-    def register_actions(self, tools):
-        # register the external func(modules) to the agent
-        return {tool.__name__: tool for tool in tools}
-
-    def completion_chat_tools(self, tools) -> List[ChatCompletionToolParam]:
-        # https://github.com/openai/openai-python/blob/main/src/openai/types/chat/completion_create_params.py#L251
-        return [chat_tool(tool) for tool in tools]
+    def messages(self) -> List[ChatCompletionMessageParam]:
+        return self._memory.get(None)
 
     async def _thinking(self) -> ChatCompletionMessage:
         new_messages = self._memory.get(self._system)
@@ -107,10 +90,6 @@ class Agent(IAgent):
         finished_event.set()
         await console_thinking_task
         self._console.price(price)
-        # self._console.thinking()
-        # assistant_message: ChatCompletionMessage = self._client(
-        #     new_messages, self._tools
-        # )
 
         assistant_param = ChatCompletionAssistantMessageParam(
             role="assistant",
@@ -129,13 +108,16 @@ class Agent(IAgent):
         return assistant_message
 
     async def run(
-        self, message: Union[ChatCompletionMessageParam, str]
+        self,
+        message: Union[ChatCompletionMessageParam, str],
     ) -> ChatCompletionAssistantMessageParam | None:
         if not isinstance(message, str):
             self._standalone = False
         self._add_user_message(message)
+        if not self._console.before_thinking(self._memory):
+            return None
         assistant_message = await self._thinking()
-        obs_status, obs_result = await self._action_observation(assistant_message)
+        obs_status, obs_result = await self._answer_observation(assistant_message)
         i = 0
         while i < self._max_iter:
             if obs_status == StatusCode.ANSWER:  # return, input or thinking
@@ -144,39 +126,26 @@ class Agent(IAgent):
                     return ChatCompletionAssistantMessageParam(
                         name=self._name, content=obs_result, role="assistant"
                     )
-                self._console.answer(obs_result)
-                next_input = self._console.ask_input(
-                    self._system, self._memory, self._tools
-                )
-                if next_input:
-                    self._add_user_message(next_input)
+                next_round = self._console.answer(self._memory)
+                if next_round:
                     i = 0
                 else:
                     return obs_result
-            elif obs_status == StatusCode.THOUGHT:  # input or thinking
-                self._console.thought(obs_result)
-                next_step = self._console.ask_input(
-                    self._system, self._memory, self._tools
-                )
-                if next_step:
-                    i = 0
-                    self._add_user_message(next_step)
-                else:
-                    return
             elif obs_status == StatusCode.OBSERVATION:  # thinking
                 print()
             elif obs_status == StatusCode.ACTION_FORBIDDEN:  # return None
                 return
-            else:  # StatusCode.ERROR, StatusCode.NONE       # return None
+            else:  # StatusCode.ERROR, StatusCode.NONE, StatusCode.Thought       # return None
                 self._console.error(obs_result)
                 return
             assistant_message = await self._thinking()
-            obs_status, obs_result = await self._action_observation(assistant_message)
+            obs_status, obs_result = await self._answer_observation(assistant_message)
             i += 1
         if i == self._max_iter:
             self._console.overload(self._max_iter)
 
-    async def _action_observation(
+    # answer or observation
+    async def _answer_observation(
         self, chat_message: ChatCompletionMessage
     ) -> Tuple[StatusCode, str]:
         if chat_message.tool_calls:
@@ -190,10 +159,16 @@ class Agent(IAgent):
                 if not func_name in self._functions:
                     return StatusCode.ERROR, f"The '{func_name}' isn't registered!"
 
-                if not self._console.check_action(
-                    self._action_permission, func_name, func_args
+                if not self._console.before_action(
+                    self._action_permission,
+                    func_name,
+                    func_args,
+                    functions=self._functions,
                 ):
-                    return StatusCode.ACTION_FORBIDDEN, "Action cancelled by the user."
+                    return (
+                        StatusCode.ACTION_FORBIDDEN,
+                        "Action cancelled by the user.",
+                    )
 
                 status, observation = await self._observation(func_name, func_args)
                 if status == StatusCode.OBSERVATION:
@@ -205,20 +180,17 @@ class Agent(IAgent):
                         role="tool",
                     )
                     self._memory.add(
-                        self._console.check_observation(tool_observation, self._max_obs)
+                        self._console.after_action(tool_observation, self._max_obs)
                     )
                 else:
                     return status, observation
             return StatusCode.OBSERVATION, "all tool calls were successful!"
         elif chat_message.content:
-            if self._is_terminal(chat_message.content):
-                # if chat_message.content.startswith(FINAL_ANSWER):
-                return (
-                    StatusCode.ANSWER,
-                    chat_message.content.replace(FINAL_ANSWER, "").strip(),
-                )
-            else:
-                return (StatusCode.THOUGHT, chat_message.content)
+            # if chat_message.content.startswith(FINAL_ANSWER):
+            return (
+                StatusCode.ANSWER,
+                chat_message.content.replace(FINAL_ANSWER, "").strip(),
+            )
         else:
             return (
                 StatusCode.NONE,

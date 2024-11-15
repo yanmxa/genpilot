@@ -18,6 +18,7 @@ from txtai.embeddings import Embeddings
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 from agent import IAgent
+from agent.chat import ChatConsole
 
 warnings.filterwarnings("ignore")
 
@@ -127,11 +128,10 @@ def extract_title_and_description(markdown_content):
     return title, description
 
 
-import sys
-import asyncio
-from agent.chat import ChatConsole
+# import sys
+# import asyncio
 
-advisor = RetrieveAgent("advisor", os.path.join(current_dir, "runbooks"))
+# advisor = RetrieveAgent("advisor", os.path.join(current_dir, "runbooks"))
 
 
 # async def main():

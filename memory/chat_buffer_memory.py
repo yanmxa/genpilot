@@ -25,13 +25,18 @@ class ChatBufferMemory(ChatMemory):
         if self._messages[0]["role"] == "tool":
             self._messages = self._messages[1:]
 
+    def pop(self, index=-1) -> ChatCompletionMessageParam:
+        return self._messages.pop(index)
+
     def get(self, system) -> List[ChatCompletionMessageParam]:
-        new_messages = [
-            ChatCompletionSystemMessageParam(
-                role="system",
-                content=system,
+        new_messages = []
+        if system:
+            new_messages.append(
+                ChatCompletionSystemMessageParam(
+                    role="system",
+                    content=system,
+                )
             )
-        ]
         for message in self._messages:
             new_messages.append(message)
         return new_messages

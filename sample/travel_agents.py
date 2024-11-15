@@ -9,6 +9,7 @@ from tool import wikipedia, code_executor
 from agent import DefaultAgent, Agent, PromptAgent, FINAL_ANSWER
 from memory import ChatBufferMemory, ChatVectorMemory
 from dotenv import load_dotenv
+from agent.agent import IAgent
 
 load_dotenv()
 
@@ -52,12 +53,12 @@ advisor = Agent(
 )
 
 
-def transfer_to_weather_observer(message: str):
+def transfer_to_weather_observer(message: str) -> Agent:
     """Call this function if a user is asking about current weather conditions for a specified city."""
     return weather_observer
 
 
-def transfer_to_local_advisor(message: str):
+def transfer_to_local_advisor(message: str) -> Agent:
     """Call this function if you want to understanding a local fashion trends and cultural influences to recommend suitable clothing."""
     return advisor
 
