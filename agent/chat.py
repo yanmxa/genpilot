@@ -1,4 +1,5 @@
 import sys
+import re
 from typing import List, Tuple
 from openai.types.chat import (
     ChatCompletionMessageParam,
@@ -18,6 +19,7 @@ from rich.console import Console
 from memory import ChatMemory
 from rich.markdown import Markdown
 from .interface import IAgent, IChat
+from rich.padding import Padding
 
 chat_console = rich.get_console()
 
@@ -78,22 +80,39 @@ class ChatConsole(IChat):
             chat_console.print(f"[dim][$] {value}")
             chat_console.print()
 
-    def observation(self, message):
-        text = Text(f"{message}")
+    def observation(self, obs) -> str:
+        """
+        Must return the change obs
+        """
+        obs = deduplicate_log(obs)
+        text = Text(f"{obs}")
         text.stylize("dim")
-        chat_console.print(text)
+        chat_console.print(Padding(text, (0, 0, 1, 3)))  # Top, Right, Bottom, Left
+        # chat_console.print(text, padding=(0, 0, 0, 2))
         # chat_console.print(f"{message}", style="italic dim")
+        return obs
 
     def after_action(self, obs: ChatCompletionMessageParam, max_size):
         if len(obs.get("content")) > max_size:
             chat_console.print()
-            input = (
-                Prompt.ask("🤔 [dim][green]S[/green]hort observation[/dim]")
-                .strip()
-                .lower()
-            )
-            clear_previous_lines(n=2)
+            prompt_ask = "🤔 [dim][green]A[/green]lternative[/dim]"
+            try:
+                input = (
+                    Prompt.ask(prompt_ask).strip().lower()
+                )  # Prompt for the first line
+            except EOFError:
+                input = ""
+            if input == "paste":
+                try:
+                    multi_line_input = (
+                        sys.stdin.read().strip().lower()
+                    )  # Capture multi-line pasted input
+                    input = multi_line_input
+                except EOFError:
+                    input = ""
+
             if input == "" or input in ["y", "yes", "okay", "ok"]:
+                clear_previous_lines(n=2)
                 return obs
             elif input in ["s", "short"]:
                 return ChatCompletionUserMessageParam(
@@ -103,9 +122,10 @@ class ChatConsole(IChat):
             elif input in ["e", "exit"]:
                 return ChatCompletionUserMessageParam(
                     role="user",
-                    content="Observation too large to display, but successful—continue to the next step!",
+                    content="User exit!",
                 )
             else:
+                self.observation(f"{input}")
                 return ChatCompletionUserMessageParam(role="user", content=f"{input}")
         return obs
 
@@ -137,7 +157,10 @@ class ChatConsole(IChat):
 
                 case "/debug":
                     chat_console.print(memory.get(system))
-                    if tools:
+                    continue
+
+                case "/debug-tool":
+                    if tools or len(tools) > 0:
                         chat_console.print(tools)
                     continue
 
@@ -172,17 +195,19 @@ class ChatConsole(IChat):
                     )
                     return True
 
-    def before_thinking(self, memory: ChatMemory) -> bool:
+    def before_thinking(self, memory: ChatMemory, tools=[]) -> bool:
         if not self._before_thinking:
             return True
-        return self._ask_input(memory, skip_inputs=["", "yes", "approve"])
+        return self._ask_input(memory, tools=tools, skip_inputs=["", "yes", "approve"])
 
-    def answer(self, memory: ChatMemory) -> bool:
+    def answer(self, memory: ChatMemory, answer: str = None, tools=[]) -> bool:
         lastChatMessage: ChatCompletionMessageParam = memory.get(None)[-1]
         result = lastChatMessage.get("content").strip()
+        if answer:
+            result = answer
         chat_console.print(f"✨ {result} \n", style="bold green")
 
-        return self._ask_input(memory, name="user")
+        return self._ask_input(memory, tools=tools, name="user")
 
     def thought(self, result):
         chat_console.print(f"💭 {result} \n", style="blue")
@@ -204,8 +229,10 @@ class ChatConsole(IChat):
             # TODO: add other information
             return True
 
-        tool_info = f"🛠  [yellow]{func_name}[/yellow] - [dim]{func_args}[/dim]"
+        tool_info = f"🛠 [yellow]{func_name}[/yellow] - [dim]{func_args}[/dim]"
         if func_name == "code_executor":
+            chat_console.print(f"🛠 [yellow]{func_args['language']}[/yellow]")
+            rich.print()
             chat_console.print(
                 Syntax(
                     func_args["code"],
@@ -214,26 +241,34 @@ class ChatConsole(IChat):
                     line_numbers=True,
                 )
             )
+        elif func_name == "kubectl_cmd":
+            block = func_args["command"] + func_args["input"]
+            chat_console.print(
+                f"🛠 [yellow] cluster: {func_args['cluster_name']}[/yellow]"
+            )
             rich.print()
-            tool_info = f"🛠  [yellow]{func_args['language']}[/yellow]"
+            chat_console.print(
+                Syntax(
+                    block,
+                    "shell",
+                    theme="monokai",
+                    line_numbers=True,
+                )
+            )
         else:
-            if len(f"{func_args}") > 20:
-                args_str = f"{func_args}"[:10] + "..." + f"{func_args}"[-10:]
-                tool_info = f"🛠  [yellow]{func_name}[/yellow] - [dim]{args_str}[/dim]"
-        if permission == ActionPermission.NONE:
             chat_console.print(tool_info)
+        rich.print()
+
+        if permission == ActionPermission.NONE:
             return True
 
         if permission == ActionPermission.AUTO and func_edit == 0:  # enable auto
-            chat_console.print(tool_info)
             return True
 
+        # chat_console.print(f"🛠  [yellow]{func_name}[/yellow]\n")
+        # chat_console.print(f"   [dim]{func_args} [/dim] \n")
         while True:
-            proceed = (
-                chat_console.input(f"{tool_info}  👉 [dim]Approve ?: [/dim]")
-                .strip()
-                .upper()
-            )
+            proceed = chat_console.input(f"👉 [dim]Approve ?: [/dim]").strip().upper()
             rich.print()
             if proceed == "Y":
                 return True
@@ -251,3 +286,34 @@ def clear_previous_lines(n=1):
         sys.stdout.write("\033[F")  # Move the cursor up one line
         sys.stdout.write("\033[K")  # Clear the line
     sys.stdout.flush()
+
+
+def deduplicate_log(log: str, size=3000) -> str:
+    """
+    Deduplicate logs and only keep the latest log entries.
+
+    Args:
+        log (str): The log string containing multiple log entries.
+        size (int): The maximum size of the log to process.
+
+    Returns:
+        str: Deduplicated logs with only the latest entries.
+    """
+    # Limit log size
+    if len(log) > size:
+        log = log[-size:]
+
+    lines = log.splitlines()
+    latest_logs = {}
+
+    for line in lines:
+        # Remove timestamp (common formats: YYYY-MM-DD, HH:MM:SS, or ISO8601)
+        cleaned_line = re.sub(
+            r"\d{4}-\d{2}-\d{2}[T ]?\d{2}:\d{2}:\d{2}(?:\.\d+Z)?", "", line
+        ).strip()
+
+        # Update the latest occurrence of each log message
+        latest_logs[cleaned_line] = line  # Overwrite with the latest line
+
+    # Return the latest entries in the order they appeared
+    return "\n".join(latest_logs.values())

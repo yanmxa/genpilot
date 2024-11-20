@@ -7,5 +7,6 @@ from .metadata import (
     build_from_template,
 )
 from .code_executor import code_executor
+from .kubectl_executor import KubectlExecutor
 
 __all__ = [name for name in globals() if not name.startswith("_")]

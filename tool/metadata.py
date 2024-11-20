@@ -68,9 +68,24 @@ def chat_tool(func) -> ChatCompletionToolParam:
     )
 
 
+# def func_metadata(func):
+#     source = inspect.getsource(func)
+#     tree = ast.parse(source)
+#     for node in tree.body:
+#         if isinstance(node, ast.FunctionDef):
+#             func_name = node.name
+#             func_args = [arg.arg for arg in node.args.args]
+#             func_description = ast.get_docstring(node)
+#             return func_name, func_args, func_description
+
+
+import textwrap
+
+
 def func_metadata(func):
     source = inspect.getsource(func)
-    tree = ast.parse(source)
+    dedented_source = textwrap.dedent(source)
+    tree = ast.parse(dedented_source)
     for node in tree.body:
         if isinstance(node, ast.FunctionDef):
             func_name = node.name

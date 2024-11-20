@@ -1,10 +1,8 @@
 import os
 import json
 import asyncio
-
 from typing import Union, Tuple, List, Protocol
 from abc import ABC, abstractmethod
-
 from openai.types.chat import (
     ChatCompletionMessage,
     ChatCompletionMessageParam,
@@ -114,7 +112,7 @@ class Agent(IAgent):
         if not isinstance(message, str):
             self._standalone = False
         self._add_user_message(message)
-        if not self._console.before_thinking(self._memory):
+        if not self._console.before_thinking(self._memory, self._tools):
             return None
         assistant_message = await self._thinking()
         obs_status, obs_result = await self._answer_observation(assistant_message)
@@ -126,7 +124,9 @@ class Agent(IAgent):
                     return ChatCompletionAssistantMessageParam(
                         name=self._name, content=obs_result, role="assistant"
                     )
-                next_round = self._console.answer(self._memory)
+                next_round = self._console.answer(
+                    self._memory, answer=obs_result, tools=self._tools
+                )
                 if next_round:
                     i = 0
                 else:
@@ -221,8 +221,7 @@ class Agent(IAgent):
             observation = ret.get("content")
             self._console.delivery(agent.name, self.name, observation)
         else:  # default
-            self._console.observation(observation)
-
+            observation = self._console.observation(observation)
         return StatusCode.OBSERVATION, observation
 
     async def async_wrapper_client(self, messages, tools, response_mode):

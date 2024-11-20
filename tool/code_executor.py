@@ -30,15 +30,24 @@ def code_executor(language, code):
     try:
         if language == "python":
             process = subprocess.run(
-                ["python3", "-c", code], capture_output=True, text=True
+                ["python3", "-c", code],
+                capture_output=True,
+                text=True,
+                # stdout=subprocess.PIPE,
             )
         elif language == "bash":
             process = subprocess.run(
-                ["bash", "-c", code], capture_output=True, text=True
+                ["bash", "-c", code],
+                capture_output=True,
+                text=True,
+                stdout=subprocess.PIPE,
             )
         elif language == "nodejs":
             process = subprocess.run(
-                ["node", "-e", code], capture_output=True, text=True
+                ["node", "-e", code],
+                capture_output=True,
+                text=True,
+                # stdout=subprocess.PIPE,
             )
         else:
             return "Unsupported language. Please specify 'python', 'bash', or 'nodejs'."
@@ -48,12 +57,10 @@ def code_executor(language, code):
         error = process.stderr
 
         # Check for exit code and return both stdout and stderr for debugging
-        if process.returncode != 0:
-            return f"{error.strip()}"
-        elif not output.strip() and not error.strip():
+        if not output.strip() and not error.strip():
             return "Execution completed with no output."
-        else:
-            return output.strip() if output else error.strip()
+
+        return output.strip() if output else f"{error.strip()}"
 
     except Exception as e:
         # Print the full traceback for debugging

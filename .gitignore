@@ -6,3 +6,5 @@ build
 dist
 zen_agent.egg-info
 cache
+
+*.cast

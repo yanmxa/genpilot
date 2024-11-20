@@ -29,7 +29,8 @@ class GroqClient:
         self._grop_client = Groq(
             api_key=config.api_key,
         )
-        if config.mode == instructor.Mode.JSON:
+        self._mode = config.mode
+        if self._mode == instructor.Mode.JSON:
             self._client = instructor.from_groq(
                 self._grop_client, mode=instructor.Mode.JSON
             )
@@ -41,7 +42,7 @@ class GroqClient:
         response_model: BaseModel = None,
     ) -> ChatCompletionMessage:
         # https://github.com/openai/openai-python/blob/main/src/openai/types/chat/completion_create_params.py
-        if response_model:
+        if response_model and self._mode == instructor.Mode.JSON:
             chat_completion: BaseModel = self._client.chat.completions.create(
                 stream=False,
                 model=self.model_id,
