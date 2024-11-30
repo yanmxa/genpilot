@@ -40,7 +40,7 @@ def code_executor(language, code):
                 ["bash", "-c", code],
                 capture_output=True,
                 text=True,
-                stdout=subprocess.PIPE,
+                # stdout=subprocess.PIPE,
             )
         elif language == "nodejs":
             process = subprocess.run(

@@ -126,13 +126,13 @@ class KubectlExecutor:
         cluster_name: str,
         command: str,
         input: str = None,
-        timeout: float = None,
+        timeout: float = 10,
     ) -> str:
         """
         Run the kubectl command within the specified cluster and return the final output.
 
         Args:
-          cluster_name (str): The name of the cluster to access.
+          cluster_name (str): The name of the cluster to access. the default value is 'default'
           command (str): The kubectl command to execute (e.g., "kubectl get pods").
           input: Input to be passed to the command (str or bytes). Useful for commands like `apply -f -`.
           timeout (int): Timeout for the command execution in seconds.
@@ -186,7 +186,7 @@ class KubectlExecutor:
                 stderr=subprocess.STDOUT,
             ).stdout.decode()
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
-            return str(error)
+            return f"{adapt_kubectl}: \n{error.stdout.decode()}"
         return output
 
     def list_clusters(self):

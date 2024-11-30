@@ -59,7 +59,6 @@
 </details>
 
 
-
 - **Memory** [PROCESSING]  
 
   Memory capabilities enhance accuracy and optimize thought processes by transitioning from stateless to stateful operations. Unlike Retrieval-Augmented Generation (RAG), which builds knowledge from external sources, our approach is based on the agent's own experiences.
@@ -78,3 +77,12 @@
 - **RAG Support**
 
 We also provide a retrieval agent capable of integrating local resources or knowledge into the multi-agent system. The default implementation is based on LlamaIndex's [ChatEngine](https://docs.llamaindex.ai/en/stable/examples/chat_engine/chat_engine_best/).
+
+- **Typed Prompt and Auto Optimizer**
+
+  - https://github.com/stanfordnlp/dspy
+  - https://github.com/zou-group/textgrad
+
+- **UI Support**
+ 
+  - https://github.com/streamlit/streamlit

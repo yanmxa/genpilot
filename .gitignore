@@ -8,3 +8,4 @@ zen_agent.egg-info
 cache
 
 *.cast
+.ipynb_*

@@ -1,0 +1,10 @@
+clusters:
+  - name: hub
+    kubeconfig: /tmp/acm-agents
+    context: kind-hub
+  - name: cluster1
+    kubeconfig: /tmp/acm-agents
+    context: kind-cluster1
+  - name: cluster2
+    kubeconfig: /tmp/acm-agents
+    context: kind-cluster2
