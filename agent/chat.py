@@ -229,9 +229,9 @@ class ChatConsole(IChat):
             # TODO: add other information
             return True
 
-        tool_info = f"🛠 [yellow]{func_name}[/yellow] - [dim]{func_args}[/dim]"
+        tool_info = f"🛠  [yellow]{func_name}[/yellow] - [dim]{func_args}[/dim]"
         if func_name == "code_executor":
-            chat_console.print(f"🛠 [yellow]{func_args['language']}[/yellow]")
+            chat_console.print(f"🛠  [yellow]{func_args['language']}[/yellow]")
             rich.print()
             chat_console.print(
                 Syntax(
@@ -244,7 +244,7 @@ class ChatConsole(IChat):
         elif func_name == "kubectl_cmd":
             block = func_args["command"] + func_args["input"]
             chat_console.print(
-                f"🛠 [yellow] cluster: {func_args['cluster_name']}[/yellow]"
+                f"🛠  [yellow]cluster: {func_args['cluster_name']}[/yellow]"
             )
             rich.print()
             chat_console.print(

@@ -8,5 +8,6 @@ from .metadata import (
 )
 from .code_executor import code_executor
 from .kubectl_executor import KubectlExecutor
+from .serper import google
 
 __all__ = [name for name in globals() if not name.startswith("_")]
