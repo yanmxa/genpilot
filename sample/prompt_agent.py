@@ -30,7 +30,7 @@ groq_client = GroqClient(
 )
 
 
-async def main():
+def main():
     prompt = sys.argv[1]
     a = PromptAgent(
         bedrock_client,
@@ -39,8 +39,8 @@ async def main():
         tools=[code_executor],
         max_iter=10,
     )
-    response = await a.run(prompt)
+    response = a.run(prompt)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

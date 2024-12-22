@@ -23,8 +23,13 @@ class IAgent(ABC):
     def name(self):
         pass
 
+    @property
     @abstractmethod
-    async def run(
+    def avatar(self):
+        pass
+
+    @abstractmethod
+    def run(
         self,
         message: Union[ChatCompletionMessageParam, str],
     ) -> ChatCompletionAssistantMessageParam | None:
@@ -60,47 +65,3 @@ class IAgent(ABC):
 
         # https://github.com/openai/openai-python/blob/main/src/openai/types/chat/completion_create_params.py#L251
         return [chat_tool(tool) for tool in tools]
-
-
-class IChat(ABC):
-
-    def system(self, str) -> None:
-        pass
-
-    def thinking(self, messages):
-        pass
-
-    def delivery(self, from_agent, to_agent, message):
-        pass
-
-    async def async_thinking(self, messages, finished_event):
-        pass
-
-    def price(self, value):
-        pass
-
-    def observation(self, message):
-        pass
-
-    def after_action(self, obs: ChatCompletionMessageParam, max_size):
-        pass
-
-    def before_thinking(self, memory: ChatMemory) -> bool:
-        return self._ask_input(memory, skip_inputs=["", "yes", "approve"])
-
-    def answer(self, memory: ChatMemory) -> bool:
-        pass
-
-    def thought(self, result):
-        pass
-
-    def error(self, message):
-        pass
-
-    def overload(self, max_iter):
-        pass
-
-    def before_action(
-        self, permission, func_name, func_args, func_edit=0, functions={}
-    ) -> bool:
-        pass

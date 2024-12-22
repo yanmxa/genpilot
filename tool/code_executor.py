@@ -27,14 +27,17 @@ def code_executor(language, code):
         js_code = "console.log('Hello from Node.js!');"
         print(execute_code('nodejs', js_code))
     """
+    print(
+        "=================================code executor================================="
+    )
     try:
-        if language == "python":
+        if language == "python" or language == "python3":
+            # Execute Python code
+            print("python code", code)
             process = subprocess.run(
-                ["python3", "-c", code],
-                capture_output=True,
-                text=True,
-                # stdout=subprocess.PIPE,
+                ["python3", "-c", code], text=True, capture_output=True
             )
+            print(process)
         elif language == "bash":
             process = subprocess.run(
                 ["bash", "-c", code],
@@ -45,7 +48,7 @@ def code_executor(language, code):
         elif language == "nodejs":
             process = subprocess.run(
                 ["node", "-e", code],
-                capture_output=True,
+                # capture_output=True,
                 text=True,
                 # stdout=subprocess.PIPE,
             )
@@ -57,9 +60,8 @@ def code_executor(language, code):
         error = process.stderr
 
         # Check for exit code and return both stdout and stderr for debugging
-        if not output.strip() and not error.strip():
+        if not output and not error:
             return "Execution completed with no output."
-
         return output.strip() if output else f"{error.strip()}"
 
     except Exception as e:

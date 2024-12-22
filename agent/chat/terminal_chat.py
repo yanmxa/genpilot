@@ -4,6 +4,7 @@ from typing import List, Tuple
 from openai.types.chat import (
     ChatCompletionMessageParam,
     ChatCompletionUserMessageParam,
+    ChatCompletionMessage,
 )
 import rich
 import rich.rule
@@ -12,121 +13,103 @@ from rich.syntax import Syntax
 from rich.markdown import Markdown
 from rich.text import Text
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn
-import asyncio
 from type import ActionPermission
-from rich.console import Console
 from memory import ChatMemory
 from rich.markdown import Markdown
-from .interface import IAgent, IChat
 from rich.padding import Padding
+import threading
+from typing import Callable, Any
+import time
+
+from agent.interface.chat import IChat
+from agent.interface.agent import IAgent
+from .streamlit_chat import assistant_message_to_param
 
 chat_console = rich.get_console()
 
 
-class ChatConsole(IChat):
+class TerminalChat(IChat):
     def __init__(self, name="AgentConsole"):
         self._before_thinking = False
         self.name = name
+        self.validate_obs = True
 
     def system(self, str) -> None:
         # console.print(Markdown(str))
         pass
 
-    def delivery(self, from_agent, to_agent, message):
-        #  title = f"📨 [bold yellow]{agent_a}[/bold yellow] [cyan]→[/cyan] [bold magenta]{agent_b}[/bold magenta]"
-        title = f"📨 [bold bright_cyan]{to_agent}[/bold bright_cyan]"
-        chat_console.print()
+    def avatar(self):
+        return "🤖"
 
+    def input(self, message, from_agent_name="user", from_agent_avatar=None):
+        #  title = f"📨 [bold yellow]{agent_a}[/bold yellow] [cyan]→[/cyan] [bold magenta]{agent_b}[/bold magenta]"
+        title = f"📨 [bold bright_cyan]{self.name}[/bold bright_cyan]"
+        chat_console.print()
+        message = message.get("content")
         markdown = Markdown(message)
 
         # f"[white]{message}[/white]"
         panel = Panel(
             markdown,
             title=title,
-            subtitle=f"from {from_agent}",
+            subtitle=f"from {from_agent_name}",
             title_align="left",
             padding=(1, 2),
             border_style="bright_black",  # A softer border color
         )
 
         chat_console.print(panel)
+        pass
 
-    def thinking(self, messages):
-        # chat_console.rule("🤖", characters="~", style="dim")
-        # chat_console.print(messages)
-        # chat_console.print()
-        for msg in messages:
-            chat_console.print(f"    {msg}", style="cyan")
+    def assistant_thinking(
+        self, task_func: Callable[..., Any], *args: Any
+    ) -> ChatCompletionMessageParam:
         chat_console.print()
-
-    async def async_thinking(self, messages, finished_event):
-        # chat_console.print(messages)
-        chat_console.print()
-        with Progress(SpinnerColumn(), console=Console(), transient=True) as progress:
-            building_task = progress.add_task("LLM thinking", total=None)
-            while not finished_event.is_set():
-                elapsed_time = progress.tasks[building_task].elapsed
-                await asyncio.sleep(0.1)
-                # progress.advance(building_task)  # Advance the spinner
-            # chat_console.print(messages)
-            elapsed_time = progress.tasks[building_task].elapsed
+        # Record the start time
+        start_time = time.time()
+        # Create a threading event to stop the spinner when the task finishes
+        stop_event = threading.Event()
+        # Start the spinner in a separate thread
+        spinner_thread = threading.Thread(target=spinner, args=(stop_event,))
+        spinner_thread.start()
+        # Run the provided task function with its arguments and capture the result
+        message, price = task_func(*args)
+        # Set the stop_event to stop the spinner after the task is complete
+        stop_event.set()
+        # Wait for the spinner thread to finish
+        spinner_thread.join()
+        # Calculate the elapsed time in seconds
+        elapsed_time = time.time() - start_time
+        # Clear the spinner from the terminal by overwriting the spinner with spaces
+        sys.stdout.write("\r    \r")  # Overwrites the spinner with spaces
+        sys.stdout.flush()
         chat_console.print(f"[dim][+] {self.name} Thinking {elapsed_time:.2f}s")
+        if price is not None and price != "":
+            chat_console.print(f"[dim][$] {price}")
         chat_console.print()
+        assistant_message = assistant_message_to_param(message)
+        return assistant_message
 
-    def price(self, value):
-        if value is not None and value != "":
-            clear_previous_lines()
-            chat_console.print(f"[dim][$] {value}")
-            chat_console.print()
+    def observation(self, obs, thinking=False) -> str:
+        """
+        Must return the change obs or thinking
+        """
+        # if thinking:
+        #     for msg in obs:
+        #         chat_console.print(f"    {msg}", style="cyan")
+        #     chat_console.print()
+        #     return None
 
-    def observation(self, obs) -> str:
-        """
-        Must return the change obs
-        """
-        obs = deduplicate_log(obs)
-        text = Text(f"{obs}")
+        # obs = deduplicate_log(obs)
+        message = obs.get("content")
+        text = Text(f"{message}")
         text.stylize("dim")
         chat_console.print(Padding(text, (0, 0, 1, 3)))  # Top, Right, Bottom, Left
         # chat_console.print(text, padding=(0, 0, 0, 2))
         # chat_console.print(f"{message}", style="italic dim")
-        return obs
 
-    def after_action(self, obs: ChatCompletionMessageParam, max_size):
-        if len(obs.get("content")) > max_size:
-            chat_console.print()
-            prompt_ask = "🤔 [dim][green]A[/green]lternative[/dim]"
-            try:
-                input = (
-                    Prompt.ask(prompt_ask).strip().lower()
-                )  # Prompt for the first line
-            except EOFError:
-                input = ""
-            if input == "paste":
-                try:
-                    multi_line_input = (
-                        sys.stdin.read().strip().lower()
-                    )  # Capture multi-line pasted input
-                    input = multi_line_input
-                except EOFError:
-                    input = ""
-
-            if input == "" or input in ["y", "yes", "okay", "ok"]:
-                clear_previous_lines(n=2)
-                return obs
-            elif input in ["s", "short"]:
-                return ChatCompletionUserMessageParam(
-                    role="user",
-                    content="Observation too large to display, but successful—continue to the next step!",
-                )
-            elif input in ["e", "exit"]:
-                return ChatCompletionUserMessageParam(
-                    role="user",
-                    content="User exit!",
-                )
-            else:
-                self.observation(f"{input}")
-                return ChatCompletionUserMessageParam(role="user", content=f"{input}")
+        if self.validate_obs:
+            obs = self.validate_observation(obs)
         return obs
 
     def _ask_input(
@@ -200,24 +183,21 @@ class ChatConsole(IChat):
             return True
         return self._ask_input(memory, tools=tools, skip_inputs=["", "yes", "approve"])
 
-    def answer(self, memory: ChatMemory, answer: str = None, tools=[]) -> bool:
+    def next_message(self, memory: ChatMemory, tools=[]):
         lastChatMessage: ChatCompletionMessageParam = memory.get(None)[-1]
         result = lastChatMessage.get("content").strip()
-        if answer:
-            result = answer
         chat_console.print(f"✨ {result} \n", style="bold green")
 
-        return self._ask_input(memory, tools=tools, name="user")
-
-    def thought(self, result):
-        chat_console.print(f"💭 {result} \n", style="blue")
+        if self._ask_input(memory, tools=tools, name="user"):
+            ret = memory.get(None)[-1].get("content")
+            # delete the last message from memory -> it will add message in the following input
+            memory.pop()
+            return ret
+        return None
 
     def error(self, message):
         chat_console.print()
         chat_console.print(f"🐞 {message} \n", style="red")
-
-    def overload(self, max_iter):
-        chat_console.print(f"💣 [red]Reached maximum iterations: {max_iter}![/red]\n")
 
     def before_action(
         self, permission, func_name, func_args, func_edit=0, functions={}
@@ -280,6 +260,30 @@ class ChatConsole(IChat):
                     "⚠️ Invalid input! Please enter 'Y' or 'N'.\n", style="yellow"
                 )
 
+    def validate_observation(self, obs: str):
+        prompt_ask = "🤔 [dim]Alternative Observation?[/dim]"
+        try:
+            input = Prompt.ask(prompt_ask).strip().lower()  # Prompt for the first line
+        except EOFError:
+            input = ""
+        if input == "paste":
+            try:
+                multi_line_input = (
+                    sys.stdin.read().strip().lower()
+                )  # Capture multi-line pasted input
+                input = multi_line_input
+            except EOFError:
+                input = ""
+        elif input in ["s", "short", "y", "yes", "okay", "ok"]:
+            clear_previous_lines(n=2)
+            return "Observation too large to display, but successful—continue to the next step!"
+        else:
+            # obs = deduplicate_log(f"{obs}")
+            # text = Text(f"{obs}")
+            # text.stylize("dim")
+            # chat_console.print(Padding(text, (0, 0, 1, 3)))  # Top, Right, Bottom, Left
+            return obs
+
 
 def clear_previous_lines(n=1):
     for _ in range(n):
@@ -317,3 +321,26 @@ def deduplicate_log(log: str, size=3000) -> str:
 
     # Return the latest entries in the order they appeared
     return "\n".join(latest_logs.values())
+
+
+def spinner(stop_event: threading.Event) -> None:
+    """
+    Displays a simple spinner in the terminal until the stop_event is set.
+
+    Parameters:
+    stop_event (threading.Event): Event to stop the spinner when the task finishes.
+    """
+    spinner_chars = ["|", "/", "-", "\\"]
+    while not stop_event.is_set():  # Continue spinning until the event is set
+        for char in spinner_chars:
+            if stop_event.is_set():
+                break  # Exit immediately if the stop event is set
+            sys.stdout.write(
+                f"\r{char} "
+            )  # \r moves the cursor to the beginning of the line
+            sys.stdout.flush()  # Ensures the spinner character is immediately displayed
+            time.sleep(0.1)  # Adjust the speed of the spinner
+
+    # To clear the spinner when done, overwrite the spinner with spaces and move the cursor to the start
+    sys.stdout.write("\r    \r")  # Overwrites the spinner with spaces (clear the line)
+    sys.stdout.flush()

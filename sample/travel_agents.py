@@ -6,7 +6,7 @@ import json
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from client import BedRockClient, GroqClient, ClientConfig
 from tool import wikipedia, code_executor
-from agent import DefaultAgent, Agent, PromptAgent, FINAL_ANSWER
+from agent import Agent, PromptAgent, FINAL_ANSWER
 from memory import ChatBufferMemory, ChatVectorMemory
 from dotenv import load_dotenv
 from agent.agent import IAgent

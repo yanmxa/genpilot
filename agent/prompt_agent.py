@@ -69,9 +69,8 @@ class PromptAgent(Agent):
     # https://github.com/openai/openai-python/blob/main/src/openai/types/chat/chat_completion_tool_param.py
     # https://platform.openai.com/docs/guides/function-calling
 
-    async def _answer_observation(
-        self, chat_message: ChatCompletionMessage
-    ) -> Tuple[StatusCode, str]:
+    def _acting(self) -> Tuple[StatusCode, str]:
+        chat_message = self._memory.get(None)[-1]
         try:
             # decoder = json.JSONDecoder()
             content = chat_message.content
@@ -80,7 +79,7 @@ class PromptAgent(Agent):
             chat_message: ChatMessage = ChatMessage.model_validate_json(content)
 
             if chat_message.thought:
-                self._console.thinking(chat_message.thought)
+                self._console.observation(chat_message.thought, thinking=True)
             if chat_message.action and chat_message.action.name != "":
                 func_name = chat_message.action.name
                 func_args = chat_message.action.args
@@ -102,7 +101,7 @@ class PromptAgent(Agent):
                 ):
                     return StatusCode.ACTION_FORBIDDEN, "Action cancelled by the user."
 
-                status, observation = await self._observation(func_name, func_args)
+                status, observation = self._observation(func_name, func_args)
                 if status == StatusCode.ERROR:
                     return StatusCode.ERROR, observation
 
@@ -110,12 +109,15 @@ class PromptAgent(Agent):
                     observation = "no result found the action"
 
                 self._memory.add(
-                    self._console.after_action(
-                        ChatCompletionUserMessageParam(
-                            role="user", content=f"{observation}"
-                        ),
-                        self._max_obs,
+                    ChatCompletionUserMessageParam(
+                        role="user", content=f"{observation}"
                     )
+                    # self._console.after_action(
+                    #     ChatCompletionUserMessageParam(
+                    #         role="user", content=f"{observation}"
+                    #     ),
+                    #     self._max_obs,
+                    # )
                 )
                 return StatusCode.OBSERVATION, f"{observation}"
             elif chat_message.answer:

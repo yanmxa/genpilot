@@ -13,7 +13,7 @@ from llama_index.vector_stores.qdrant import QdrantVectorStore
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from client import BedRockClient, GroqClient
-from agent import DefaultAgent, Agent, FINAL_ANSWER
+from agent import Agent, FINAL_ANSWER
 from memory import ChatBufferMemory, ChatVectorMemory
 
 client = qdrant_client.QdrantClient(path="./cache/qdrant_data")

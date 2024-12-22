@@ -1,4 +1,3 @@
-from .default_agent import DefaultAgent
 from .agent import Agent
 from .agent import IAgent
 from .prompt_agent import PromptAgent
