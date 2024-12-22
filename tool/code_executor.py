@@ -32,12 +32,19 @@ def code_executor(language, code):
     )
     try:
         if language == "python" or language == "python3":
+            # version_process = subprocess.run(
+            #     ["python3", "--version"], text=True, capture_output=True
+            # )
+            # print("Python version:", version_process.stdout.strip())
+            # backend_code = "import matplotlib; print(matplotlib.get_backend())"
+            # backend_process = subprocess.run(
+            #     ["python3", "-c", backend_code], text=True, capture_output=True
+            # )
+            # print("Matplotlib backend:", backend_process.stdout.strip())
             # Execute Python code
-            print("python code", code)
             process = subprocess.run(
                 ["python3", "-c", code], text=True, capture_output=True
             )
-            print(process)
         elif language == "bash":
             process = subprocess.run(
                 ["bash", "-c", code],

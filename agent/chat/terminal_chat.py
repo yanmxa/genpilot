@@ -29,10 +29,11 @@ chat_console = rich.get_console()
 
 
 class TerminalChat(IChat):
-    def __init__(self, name="AgentConsole"):
+    def __init__(self, name="AgentConsole", memory=None):
         self._before_thinking = False
         self.name = name
         self.validate_obs = True
+        self.memory = memory
 
     def system(self, str) -> None:
         # console.print(Markdown(str))
@@ -48,7 +49,7 @@ class TerminalChat(IChat):
         message = message.get("content")
         markdown = Markdown(message)
 
-        # f"[white]{message}[/white]"
+        # f"[white]{message}[/white]"validate_observation
         panel = Panel(
             markdown,
             title=title,
@@ -90,7 +91,7 @@ class TerminalChat(IChat):
         assistant_message = assistant_message_to_param(message)
         return assistant_message
 
-    def observation(self, obs, thinking=False) -> str:
+    def observation(self, obs_param, thinking=False) -> str:
         """
         Must return the change obs or thinking
         """
@@ -101,7 +102,7 @@ class TerminalChat(IChat):
         #     return None
 
         # obs = deduplicate_log(obs)
-        message = obs.get("content")
+        message = obs_param.get("content")
         text = Text(f"{message}")
         text.stylize("dim")
         chat_console.print(Padding(text, (0, 0, 1, 3)))  # Top, Right, Bottom, Left
@@ -109,8 +110,38 @@ class TerminalChat(IChat):
         # chat_console.print(f"{message}", style="italic dim")
 
         if self.validate_obs:
-            obs = self.validate_observation(obs)
-        return obs
+            obs_str = self.validate_observation(obs_param)
+        return obs_str
+
+    def validate_observation(self, obs_param):
+        prompt_ask = "🤔 [dim]Alternative Obs?[/dim]"
+        try:
+            input = Prompt.ask(prompt_ask).strip().lower()  # Prompt for the first line
+        except EOFError:
+            input = ""
+        if input in ["s", "short", "y", "yes", "okay", "ok"]:
+            self.memory.get(None)[-1][
+                "content"
+            ] = "Observation too large to display, but successful—continue to the next step!"
+            clear_previous_lines(n=2)
+            return "Observation too large to display, but successful—continue to the next step!"
+        elif input in ["n", "no", ""]:
+            # self.memory.get(None)[-1]["content"] = obs
+            # The above code is a Python script that prints the value associated with the key
+            # "content" in the dictionary `obs_param`.
+            # print("print the original observation", obs_param.get("content"))
+            return obs_param.get("content")
+        # elif input in "/debug":
+        #     chat_console.print(obs)
+        #     return obs
+        else:
+            # obs = deduplicate_log(f"{obs}")
+            # text = Text(f"{obs}")
+            # text.stylize("dim")
+            # chat_console.print(Padding(text, (0, 0, 1, 3)))  # Top, Right, Bottom, Left
+            obs_param["content"] = input
+            # print("print the alternative observation")
+            return input
 
     def _ask_input(
         self,
@@ -121,14 +152,14 @@ class TerminalChat(IChat):
         prompt_ask="🧘 [dim]Enter[/dim] [red]exit[/red][dim] or prompt[/dim]",
         skip_inputs=[],
         ignore_inputs=[""],  # Skip empty input by default
-    ) -> bool:
+    ) -> None | str:
         while True:
             # Prompt the user for input
             user_input = Prompt.ask(prompt_ask).strip().lower()
             print()
 
             if user_input in skip_inputs:
-                return True
+                return None
 
             if user_input in ignore_inputs:
                 continue
@@ -136,7 +167,7 @@ class TerminalChat(IChat):
             match user_input:
                 case "exit" | "e":
                     chat_console.print("👋 [blue]Goodbye![/blue]")
-                    return False
+                    return None
 
                 case "/debug":
                     chat_console.print(memory.get(system))
@@ -148,8 +179,8 @@ class TerminalChat(IChat):
                     continue
 
                 case "/pop":
-                    memory.pop()
-                    chat_console.print(memory.get(system))
+                    msg = memory.pop()
+                    chat_console.print(msg)
                     continue
 
                 case "/add" | "/a":
@@ -171,29 +202,24 @@ class TerminalChat(IChat):
                 case _:
 
                     # Add the user input to memory and return it
-                    memory.add(
-                        ChatCompletionUserMessageParam(
-                            content=user_input, role="user", name=name
-                        )
-                    )
-                    return True
+                    return user_input
 
-    def before_thinking(self, memory: ChatMemory, tools=[]) -> bool:
-        if not self._before_thinking:
-            return True
-        return self._ask_input(memory, tools=tools, skip_inputs=["", "yes", "approve"])
+    # def before_thinking(self, memory: ChatMemory, tools=[]) -> bool:
+    #     if not self._before_thinking:
+    #         return True
+    #     return self._ask_input(memory, tools=tools, skip_inputs=["", "yes", "approve"])
 
     def next_message(self, memory: ChatMemory, tools=[]):
         lastChatMessage: ChatCompletionMessageParam = memory.get(None)[-1]
         result = lastChatMessage.get("content").strip()
         chat_console.print(f"✨ {result} \n", style="bold green")
-
-        if self._ask_input(memory, tools=tools, name="user"):
-            ret = memory.get(None)[-1].get("content")
-            # delete the last message from memory -> it will add message in the following input
-            memory.pop()
-            return ret
-        return None
+        return self._ask_input(memory, tools=tools, name="user")
+        # if msg:
+        # ret = memory.get(None)[-1].get("content")
+        # delete the last message from memory -> it will add message in the following input
+        # memory.pop()
+        # return ret
+        # return None
 
     def error(self, message):
         chat_console.print()
@@ -259,30 +285,6 @@ class TerminalChat(IChat):
                 chat_console.print(
                     "⚠️ Invalid input! Please enter 'Y' or 'N'.\n", style="yellow"
                 )
-
-    def validate_observation(self, obs: str):
-        prompt_ask = "🤔 [dim]Alternative Observation?[/dim]"
-        try:
-            input = Prompt.ask(prompt_ask).strip().lower()  # Prompt for the first line
-        except EOFError:
-            input = ""
-        if input == "paste":
-            try:
-                multi_line_input = (
-                    sys.stdin.read().strip().lower()
-                )  # Capture multi-line pasted input
-                input = multi_line_input
-            except EOFError:
-                input = ""
-        elif input in ["s", "short", "y", "yes", "okay", "ok"]:
-            clear_previous_lines(n=2)
-            return "Observation too large to display, but successful—continue to the next step!"
-        else:
-            # obs = deduplicate_log(f"{obs}")
-            # text = Text(f"{obs}")
-            # text.stylize("dim")
-            # chat_console.print(Padding(text, (0, 0, 1, 3)))  # Top, Right, Bottom, Left
-            return obs
 
 
 def clear_previous_lines(n=1):

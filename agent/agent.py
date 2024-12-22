@@ -50,7 +50,11 @@ class Agent(IAgent):
         self._memory = (
             memory if memory is not None else ChatBufferMemory(memory_id=name, size=10)
         )
-        self._console = chat_console if chat_console is not None else TerminalChat(name)
+        self._console = (
+            chat_console
+            if chat_console is not None
+            else TerminalChat(name, self._memory)
+        )
         # self.avatar = self._console.avatar
         self._max_iter = max_iter
         self._max_obs = max_obs
@@ -148,7 +152,7 @@ class Agent(IAgent):
                     )
 
                 err_message = self._observation(tool_call.id, func_name, func_args)
-                if err_message:
+                if err_message is not None:
                     return StatusCode.ERROR, err_message
             return StatusCode.OBSERVATION, "all tool calls were successful!"
         elif chat_assistant_param.get("content"):
@@ -193,7 +197,9 @@ class Agent(IAgent):
                 role="tool",
             )
             self._memory.add(tool_observation)
-            observation = self._console.observation(tool_observation)
+            observation = self._console.observation(
+                tool_observation,
+            )
         return None
 
     # https://github.com/openai/openai-python/blob/main/src/openai/types/chat/chat_completion_message_param.py
