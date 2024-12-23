@@ -84,6 +84,10 @@ class Agent(IAgent):
         self._memory.add(assistant_param)
         return assistant_param
 
+    def chatbot(self):
+        message = self._console.next_message(self._memory, tools=self._tools)
+        return self.run(message)
+
     def run(
         self,
         message: Union[ChatCompletionMessageParam, str],

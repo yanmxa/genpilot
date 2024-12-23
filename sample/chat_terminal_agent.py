@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-Agent(
+a = Agent(
     client=GroqClient(
         ClientConfig(
             model="llama3-70b-8192",
@@ -29,4 +29,6 @@ Agent(
             """,
     tools=[google, code_executor],
     # chat_console=StreamlitChat("Assistant AI"),
-).run("plot the tesla and apple's stock of the last year")
+)
+
+a.chatbot()

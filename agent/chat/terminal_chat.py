@@ -210,9 +210,10 @@ class TerminalChat(IChat):
     #     return self._ask_input(memory, tools=tools, skip_inputs=["", "yes", "approve"])
 
     def next_message(self, memory: ChatMemory, tools=[]):
-        lastChatMessage: ChatCompletionMessageParam = memory.get(None)[-1]
-        result = lastChatMessage.get("content").strip()
-        chat_console.print(f"✨ {result} \n", style="bold green")
+        if len(memory.get(None)) > 0:
+            lastChatMessage: ChatCompletionMessageParam = memory.get(None)[-1]
+            result = lastChatMessage.get("content").strip()
+            chat_console.print(f"✨ {result} \n", style="bold green")
         return self._ask_input(memory, tools=tools, name="user")
         # if msg:
         # ret = memory.get(None)[-1].get("content")
