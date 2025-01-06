@@ -85,6 +85,7 @@ class Agent(IAgent):
         return assistant_param
 
     def chatbot(self):
+        print()
         message = self._console.next_message(self._memory, tools=self._tools)
         return self.run(message)
 
@@ -150,8 +151,14 @@ class Agent(IAgent):
                     func_args,
                     functions=self._functions,
                 ):
+                    tool_observation = ChatCompletionToolMessageParam(
+                        tool_call_id=tool_call.id,
+                        content=f"Action({func_name}: {tool_call.id}) are not allowed by the user.",
+                        role="tool",
+                    )
+                    self._memory.add(tool_observation)
                     return (
-                        StatusCode.ACTION_FORBIDDEN,
+                        StatusCode.ANSWER,
                         f"Action{func_name} are not allowed by the user.",
                     )
 

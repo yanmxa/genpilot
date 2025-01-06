@@ -27,7 +27,6 @@ def code_executor(language, code):
         js_code = "console.log('Hello from Node.js!');"
         print(execute_code('nodejs', js_code))
     """
-    print("-----------------------------code executing-------------------------------")
     try:
         if language == "python" or language == "python3":
             # version_process = subprocess.run(

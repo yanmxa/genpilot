@@ -6,9 +6,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # model="llama-3.2-90b-vision-preview",
-# model="llama-3.1-70b-versatile",
+# model="llama-3.3-70b-versatile",
 lm = dspy.LM(
-    model="llama-3.1-70b-versatile",
+    model="llama-3.3-70b-versatile",
     api_base="https://api.groq.com/openai/v1",
     api_key=os.getenv("GROQ_API_KEY"),
 )

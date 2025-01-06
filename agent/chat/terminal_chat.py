@@ -29,10 +29,10 @@ chat_console = rich.get_console()
 
 
 class TerminalChat(IChat):
-    def __init__(self, name="AgentConsole", memory=None):
+    def __init__(self, name="AgentConsole", memory=None, validate_obs=True):
         self._before_thinking = False
         self.name = name
-        self.validate_obs = True
+        self.validate_obs = validate_obs
         self.memory = memory
 
     def system(self, str) -> None:
@@ -82,8 +82,8 @@ class TerminalChat(IChat):
         # Calculate the elapsed time in seconds
         elapsed_time = time.time() - start_time
         # Clear the spinner from the terminal by overwriting the spinner with spaces
-        sys.stdout.write("\r    \r")  # Overwrites the spinner with spaces
-        sys.stdout.flush()
+        # sys.stdout.write("\r    \r")  # Overwrites the spinner with spaces
+        # sys.stdout.flush()
         chat_console.print(f"[dim][+] {self.name} Thinking {elapsed_time:.2f}s")
         if price is not None and price != "":
             chat_console.print(f"[dim][$] {price}")
@@ -108,7 +108,7 @@ class TerminalChat(IChat):
         chat_console.print(Padding(text, (0, 0, 1, 3)))  # Top, Right, Bottom, Left
         # chat_console.print(text, padding=(0, 0, 0, 2))
         # chat_console.print(f"{message}", style="italic dim")
-
+        obs_str = obs_param.get("content")
         if self.validate_obs:
             obs_str = self.validate_observation(obs_param)
         return obs_str
@@ -149,13 +149,14 @@ class TerminalChat(IChat):
         system=None,
         tools=None,
         name=None,
-        prompt_ask="🧘 [dim]Enter[/dim] [red]exit[/red][dim] or prompt[/dim]",
+        prompt_ask="🧘 ",
         skip_inputs=[],
         ignore_inputs=[""],  # Skip empty input by default
     ) -> None | str:
         while True:
             # Prompt the user for input
-            user_input = Prompt.ask(prompt_ask).strip().lower()
+            user_input = input(prompt_ask)
+            # user_input = Prompt.ask(prompt_ask).strip().lower()
             print()
 
             if user_input in skip_inputs:
@@ -167,6 +168,7 @@ class TerminalChat(IChat):
             match user_input:
                 case "exit" | "e":
                     chat_console.print("👋 [blue]Goodbye![/blue]")
+                    print()
                     return None
 
                 case "/debug":
@@ -212,7 +214,7 @@ class TerminalChat(IChat):
     def next_message(self, memory: ChatMemory, tools=[]):
         if len(memory.get(None)) > 0:
             lastChatMessage: ChatCompletionMessageParam = memory.get(None)[-1]
-            result = lastChatMessage.get("content").strip()
+            result = lastChatMessage.get("content")
             chat_console.print(f"✨ {result} \n", style="bold green")
         return self._ask_input(memory, tools=tools, name="user")
         # if msg:
