@@ -35,7 +35,7 @@
 
 - **Multi-Agent System**
 
-  Transitioning the zen-agent into a multi-agent system a straightforward process. The handoff workflow for orchestrating agents draws inspiration from the post [Routines and Handoffs](https://cookbook.openai.com/examples/orchestrating_agents#executing-routines), which details the functionality of the [Swarm](https://github.com/openai/swarm) project. We strive to achieve a harmonious balance, enabling you to create a single agent for specific tasks while effortlessly evolving towards a sophisticated multi-agent framework.
+  Transitioning the chat-agent into a multi-agent system a straightforward process. The handoff workflow for orchestrating agents draws inspiration from the post [Routines and Handoffs](https://cookbook.openai.com/examples/orchestrating_agents#executing-routines), which details the functionality of the [Swarm](https://github.com/openai/swarm) project. We strive to achieve a harmonious balance, enabling you to create a single agent for specific tasks while effortlessly evolving towards a sophisticated multi-agent framework.
 
 <details>
 <summary>This demo provides advice on what to wear when traveling to a city</summary>
