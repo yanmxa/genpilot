@@ -1,0 +1,7 @@
+clusters:
+  - name: global-hub
+    kubeconfig: /tmp/demo-globalhub
+    namespace: multicluster-global-hub
+  - name: demo-hub-a
+    kubeconfig: /tmp/demo-hub-a
+    namespace: multicluster-global-hub-agent
