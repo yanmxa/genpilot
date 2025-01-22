@@ -4,8 +4,8 @@
 __pycache__
 build
 dist
-zen_agent.egg-info
 cache
 
 *.cast
 .ipynb_*
+*.egg-info
