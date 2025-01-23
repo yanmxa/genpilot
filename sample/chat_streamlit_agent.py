@@ -14,9 +14,9 @@ load_dotenv()
 
 StreamlitChat.context(
     {
-        "page_title": "ChatAgent",
+        "page_title": "AgentChat",
         "page_icon": "🚀",
-        "layout": "wide",
+        # "layout": "wide",
         "initial_sidebar_state": "auto",
         "menu_items": {
             "Get Help": "https://www.extremelycoolapp.com/help",
@@ -31,7 +31,7 @@ if not StreamlitChat.is_init_session():
         Agent(
             client=GroqClient(
                 ClientConfig(
-                    model="llama3-70b-8192",
+                    model="llama-3.3-70b-versatile",
                     temperature=0.2,
                     api_key=os.getenv("GROQ_API_KEY"),
                 )

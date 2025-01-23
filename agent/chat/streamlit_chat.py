@@ -75,11 +75,25 @@ class StreamlitChat(IChat):
     @classmethod
     def input_message(cls):
         agent = st.session_state.agent
-        if user_input := st.chat_input("Ask a question"):
-            if user_input == "/debug":
-                st.write(agent._memory.get(None))
-            else:
-                agent.run(user_input)
+        agent_chat = agent.chat_console
+        print("============================================================")
+        user_input = st.chat_input("Ask a question")
+        if user_input == "/debug":
+            st.write(agent._memory.get(None))
+        if user_input == "/system":
+            st.write(agent._system)
+        elif user_input is not None:
+            for message in st.session_state.messages:
+                st.chat_message(
+                    message.get("name"), avatar=message.get("avatar")
+                ).markdown(
+                    message.get("content"),
+                    unsafe_allow_html=True,
+                )
+            ret = agent.run(user_input)
+            import rich
+
+            rich.get_console().print(f"get result {ret} for {user_input}")
 
     def __init__(self, name="user", avatar="🤖"):
         self._before_thinking = False
@@ -96,6 +110,13 @@ class StreamlitChat(IChat):
     def input(self, message, from_agent_name="user", from_agent_avatar="👨‍💻"):
         with st.chat_message(from_agent_name, avatar=from_agent_avatar):
             st.markdown(message.get("content"))
+        st.session_state.messages.append(
+            {
+                "name": from_agent_name,
+                "avatar": from_agent_avatar,
+                "content": message.get("content"),
+            }
+        )
 
     def assistant_thinking(
         self, task_func: Callable[..., Any], *args: Any
@@ -126,16 +147,48 @@ class StreamlitChat(IChat):
                         print_message = print_message + f"\n [$] {price}"
 
                 st.markdown(print_message, unsafe_allow_html=True)
+                st.session_state.messages.append(
+                    {
+                        "name": self.name,
+                        "avatar": self.avatar,
+                        "content": print_message,
+                    }
+                )
         return assistant_param
 
     def before_thinking(self, memory: ChatMemory, tools=[]) -> bool:
         return True
 
+    def obs(self, func, args):
+        with st.chat_message(self.name, avatar="👀"):
+            # Wrapping spinner and message content in a flex container
+            with st.empty():  # This allows to add dynamic elements like the spinner
+                with st.spinner("Invoking..."):  # Spinner icon
+                    observation = func(**args)
+                    print_message = f"""<div style="
+                          color: gray; 
+                          font-size: 0.9em; 
+                          font-style: italic;">
+                          {observation}
+                          </div>
+                      """
+
+                st.markdown(print_message, unsafe_allow_html=True)
+                st.session_state.messages.append(
+                    {
+                        "name": self.name,
+                        "avatar": "👀",
+                        "content": print_message,
+                    }
+                )
+        return observation
+
+    # deprecated: observation should like thinking with spinner
     def observation(self, obs) -> str:
         """
         Must return the change obs
         """
-        print(obs)
+        # print(obs)
         print_message = f"""<div style="
           color: gray; 
           font-size: 0.9em; 
@@ -143,18 +196,25 @@ class StreamlitChat(IChat):
           {obs.get("content")}
           </div>
           """
-        with st.chat_message(self.name, avatar="🔧"):
+        with st.chat_message(self.name, avatar="👀"):
             st.markdown(print_message, unsafe_allow_html=True)
+
+        st.session_state.messages.append(
+            {
+                "name": self.name,
+                "avatar": "👀",
+                "content": print_message,
+            }
+        )
         return obs
 
-    def next_message(self, memory: ChatMemory, tools=[]) -> str:
+    def next_message(self, memory: ChatMemory, tools=[], system=None) -> str:
+        # import rich
 
-        import rich
-
-        for message in memory.get(None):
-            rich.print(f"{message.get('role')} -> {type(message)}")
-            rich.print(message)
-        return ""
+        # for message in memory.get(None):
+        #     rich.print(f"{message.get('role')} -> {type(message)}")
+        #     rich.print(message)
+        pass
 
     def error(self, message):
         with st.chat_message(self.name, avatar=self.avatar):

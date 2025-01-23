@@ -91,6 +91,20 @@ class TerminalChat(IChat):
         assistant_message = assistant_message_to_param(message)
         return assistant_message
 
+    def obs(self, func, args):
+        content = func(**args)
+
+        text = Text(f"{content}")
+        text.stylize("dim")
+        chat_console.print(Padding(text, (0, 0, 1, 3)))  # Top, Right, Bottom, Left
+        # chat_console.print(text, padding=(0, 0, 0, 2))
+        # chat_console.print(f"{message}", style="italic dim")
+        obs_str = content
+        if self.validate_obs:
+            obs_str = self.validate_observation(content)
+        return obs_str
+
+    # deprecated, the observation should like thinking
     def observation(self, obs_param, thinking=False) -> str:
         """
         Must return the change obs or thinking
@@ -113,7 +127,7 @@ class TerminalChat(IChat):
             obs_str = self.validate_observation(obs_param)
         return obs_str
 
-    def validate_observation(self, obs_param):
+    def validate_observation(self, obs_content):
         prompt_ask = "🤔 [dim]Alternative Obs?[/dim]"
         try:
             input = Prompt.ask(prompt_ask).strip().lower()  # Prompt for the first line
@@ -130,7 +144,7 @@ class TerminalChat(IChat):
             # The above code is a Python script that prints the value associated with the key
             # "content" in the dictionary `obs_param`.
             # print("print the original observation", obs_param.get("content"))
-            return obs_param.get("content")
+            return obs_content
         # elif input in "/debug":
         #     chat_console.print(obs)
         #     return obs
@@ -139,7 +153,6 @@ class TerminalChat(IChat):
             # text = Text(f"{obs}")
             # text.stylize("dim")
             # chat_console.print(Padding(text, (0, 0, 1, 3)))  # Top, Right, Bottom, Left
-            obs_param["content"] = input
             # print("print the alternative observation")
             return input
 

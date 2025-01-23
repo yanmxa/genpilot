@@ -47,9 +47,6 @@ class IChat(ABC):
     ) -> ChatCompletionMessageParam:
         pass
 
-    # def answer(self, memory: ChatMemory) -> bool:
-    #     pass
-
     def next_message(self, memory: ChatMemory, tools=[]) -> str:
         pass
 

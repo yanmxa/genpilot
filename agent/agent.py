@@ -50,7 +50,7 @@ class Agent(IAgent):
         self._memory = (
             memory if memory is not None else ChatBufferMemory(memory_id=name, size=10)
         )
-        self._console = (
+        self.chat_console = (
             chat_console
             if chat_console is not None
             else TerminalChat(name, self._memory)
@@ -60,7 +60,7 @@ class Agent(IAgent):
         self._max_obs = max_obs
         self._is_terminal = is_terminal
 
-        self._console.system(self._system)
+        self.chat_console.system(self._system)
 
         self._response_model = response_model
 
@@ -70,7 +70,7 @@ class Agent(IAgent):
 
     @property
     def avatar(self):
-        return self._console.avatar
+        return self.chat_console.avatar
 
     def messages(self) -> List[ChatCompletionMessageParam]:
         return self._memory.get(None)
@@ -78,7 +78,7 @@ class Agent(IAgent):
     # Give the assistant response based on the memory messages
     def _thinking(self) -> ChatCompletionAssistantMessageParam:
         new_messages = self._memory.get(self._system)
-        assistant_param = self._console.assistant_thinking(
+        assistant_param = self.chat_console.assistant_thinking(
             self._client, new_messages, self._tools, self._response_model
         )
         self._memory.add(assistant_param)
@@ -86,7 +86,7 @@ class Agent(IAgent):
 
     def chatbot(self):
         print()
-        message = self._console.next_message(self._memory, tools=self._tools)
+        message = self.chat_console.next_message(self._memory, tools=self._tools)
         return self.run(message)
 
     def run(
@@ -108,7 +108,9 @@ class Agent(IAgent):
                     return ChatCompletionAssistantMessageParam(
                         name=self._name, content=result, role="assistant"
                     )
-                message = self._console.next_message(self._memory, tools=self._tools)
+                message = self.chat_console.next_message(
+                    self._memory, tools=self._tools
+                )
                 if message:
                     i = 0
                     is_user_input = self._input(message)
@@ -121,7 +123,7 @@ class Agent(IAgent):
                     role="user", content=result, name=self.name
                 )
             else:  # StatusCode.ERROR, StatusCode.NONE, StatusCode.Thought       # return None
-                self._console.error(result)
+                self.chat_console.error(result)
                 return ChatCompletionUserMessageParam(
                     role="user", content=result, name=self.name
                 )
@@ -129,7 +131,7 @@ class Agent(IAgent):
             status, result = self._acting()
             i += 1
         if i == self._max_iter:
-            self._console.error(f"Reached maximum iterations: {self._max_iter}!\n")
+            self.chat_console.error(f"Reached maximum iterations: {self._max_iter}!\n")
 
     # answer or observation
     def _acting(self) -> Tuple[StatusCode, str]:
@@ -145,7 +147,7 @@ class Agent(IAgent):
                 if not func_name in self._functions:
                     return StatusCode.ERROR, f"The '{func_name}' isn't registered!"
 
-                if not self._console.before_action(
+                if not self.chat_console.before_action(
                     self._action_permission,
                     func_name,
                     func_args,
@@ -181,7 +183,9 @@ class Agent(IAgent):
     # save the observation into the memory, return error message
     def _observation(self, tool_call_id, func_name, func_args) -> None | str:
         # invoke function
-        observation = self._functions[func_name](**func_args)
+        # observation = self._functions[func_name](**func_args)
+
+        observation = self.chat_console.obs(self._functions[func_name], func_args)
 
         # The agent autonomously handles handoffs. https://cookbook.openai.com/examples/orchestrating_agents#executing-routines
         if isinstance(observation, IAgent):
@@ -208,9 +212,9 @@ class Agent(IAgent):
                 role="tool",
             )
             self._memory.add(tool_observation)
-            observation = self._console.observation(
-                tool_observation,
-            )
+            # observation = self.chat_console.observation(
+            #     tool_observation,
+            # )
         return None
 
     # https://github.com/openai/openai-python/blob/main/src/openai/types/chat/chat_completion_message_param.py
@@ -231,5 +235,5 @@ class Agent(IAgent):
             self._user_input = True
             message = ChatCompletionUserMessageParam(content=message, role="user")
         self._memory.add(message)
-        self._console.input(message, agent_name, agent_avatar)
+        self.chat_console.input(message, agent_name, agent_avatar)
         return is_user_input

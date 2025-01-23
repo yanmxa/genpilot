@@ -79,7 +79,7 @@ class PromptAgent(Agent):
             chat_message: ChatMessage = ChatMessage.model_validate_json(content)
 
             if chat_message.thought:
-                self._console.observation(chat_message.thought, thinking=True)
+                self.chat_console.observation(chat_message.thought, thinking=True)
             if chat_message.action and chat_message.action.name != "":
                 func_name = chat_message.action.name
                 func_args = chat_message.action.args
@@ -92,7 +92,7 @@ class PromptAgent(Agent):
                     )
 
                 # validate the permission
-                if not self._console.before_action(
+                if not self.chat_console.before_action(
                     self._action_permission,
                     func_name,
                     func_args,
