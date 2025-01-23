@@ -22,7 +22,7 @@ def read(*paths, **kwargs):
 
 setup(
     name="agent-chat",
-    version="0.1.0",
+    version="0.1.1",
     packages=find_packages(),
     description="AgentChat facilitates the creation of AI assistant and the development of advanced multi-agent system.",
     author="Meng Yan",
