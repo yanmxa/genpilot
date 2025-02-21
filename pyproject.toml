@@ -1,7 +1,7 @@
 [project]
 name = "genpilot"
-version = "0.0.2"
-description = "GenPilot streamlines the creation and management of multi-agent systems powered by Generative AI through an intuitive, user-friendly interface. It allows both developers and end-users to efficiently transform concepts and prototypes into fully realized solutions."
+version = "0.0.3"
+description = "GenPilot streamlines the prototype for single/multi-agent systems powered by Generative AI through an intuitive, user-friendly interface."
 authors = [{ name = "myan", email = "myan@redhat.com" }]
 readme = "README.md"
 requires-python = "<4.0,>=3.10"
