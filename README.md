@@ -4,38 +4,89 @@
 
 ---
 
-# AgentChat
+# GenPilot
 
-**AgentChat** empowers developers to create AI assistants, providing the capability to build sophisticated multi-agent systems. Its features include:
+**GenPilot** streamlines the creation and management of multi-agent systems powered by Generative AI through an intuitive, user-friendly interface. It allows both developers and end-users to efficiently transform concepts and prototypes into fully realized solutions.
 
-- **Boost Autonomy**
+## Installation
 
-  ![alt text](./asset/autonomy.png)
-  AgentChat differ from those in systems like [AutoGen](https://microsoft.github.io/autogen/0.2/). With built-in tools, they operate independently, eliminating the need to rely on other agents for information. This allows them to iterate on a task before delivering results or involving another agent, reducing unnecessary interactions and agents.
+Require Python **3.10** or later.
 
-- **Tool Integration**
+```bash
+pip install genpilot
+```
 
-  Unlike [LangChain](https://python.langchain.com/docs/how_to/custom_tools/) or [AutoGen](https://microsoft.github.io/autogen/0.2/docs/tutorial/tool-use/), which require following serval rules to register functions or tools, AgentChat allows you to simply write a function and add a comment. The agent will automatically use the tool to solve tasks. As shown in the example below, check out sample/agent_tool.py for a quick start.
+## Usage
 
-  ```python
-  Agent(
-    model_client,
-    "Assistant AI", "You are an assistant to solve tasks",
-    tools=[wikipedia],
-  ).run()
-  ```
+The client is initialized using `aisuite`. Please refer to [the guide for details on different model ](https://github.com/andrewyng/aisuite/tree/main/guides).
+
+```python
+import aisuite as ai
+import genpilot as gp
+
+# 1. User Interface: Also supports Streamlit UI, allowing all agents to share the same chat interface.
+terminal = gp.TerminalChat(client=ai.Client())
+
+# 2. Define a Tool to search and summarize information
+def search_and_summarize(query):
+    """Search for information on the internet and return a summary."""
+    return f"Here's the summary for '{query}': [Summarized info]."
+
+# 3. Define an Agent for summarizing search results
+info_explorer = gp.Agent(
+    name="Information Explorer",
+    model="groq:llama-3.3-70b-versatile",
+    chat=terminal,
+    tools=[search_and_summarize],
+    system=(
+        "Your role is to search the internet and summarize relevant information for a given query. "
+        "Use the search tool to find and condense information for the user, ensuring clarity and relevance."
+    ),
+)
+
+# 4. Run the Agent with a query
+response = info_explorer.run("What's the latest news about AI advancements?")
+print(response)
+```
+
+## Why GenPilot?
+
+- **User-Friendly Interface**: GenPilot offers an intuitive interface for prototyping and quick implementation, whether through a web UI or terminal. Get started quickly and seamlessly with minimal effort.
+
+- **Enhanced Autonomy**: GenPilot can internally register and invoke tools, reducing reliance on external agents and minimizing unnecessary interactions.
 
 - **Governed Actions**
 
   ![governed action](./asset/action.png)
-  Actions performed by the AgentChat are regulated by developers with three permission levels:  
-  - **`auto`**: Requests permission only for actions that modify the system or environment[PromptAgent]
-  - **`always`**: Requests permission for every action.  
-  - **`none`**: Never requests permission.  
 
-- **Multi-Agent System**
+  GenPilot's actions are governed by three permission levels:
 
-  Transitioning the chat-agent into a multi-agent system a straightforward process. The handoff workflow for orchestrating agents draws inspiration from the post [Routines and Handoffs](https://cookbook.openai.com/examples/orchestrating_agents#executing-routines), which details the functionality of the [Swarm](https://github.com/openai/swarm) project. We strive to achieve a harmonious balance, enabling you to create a single agent for specific tasks while effortlessly evolving towards a sophisticated multi-agent framework.
+  - **`auto`**: Permission requested only for system/environment-modifying actions.
+  - **`always`**: Permission requested for all actions.  
+  - **`none`**: No permission requests. 
+
+- **Multi-Agent System**: Seamlessly scale from single-agent tasks to complex multi-agent workflows, inspired by [Routines and Handoffs](https://cookbook.openai.com/examples/orchestrating_agents#executing-routines).
+
+- **Memory** [PROCESSING]: GenPilot enhances accuracy with customizable memory:
+
+  1. `ChatBufferMemory` A short-term memory solution designed to retrieve the most recent message along with the current session context.
+
+  2. `ChatVectorMemory` A long-term memory implementation based on LlamaIndex [vector memory](https://docs.llamaindex.ai/en/stable/examples/agent/memory/vector_memory/).
+
+  > [MemGPT: Towards LLMs as Operating Systems](https://arxiv.org/pdf/2310.08560)
+  > [CLIN: A CONTINUALLY LEARNING LANGUAGE AGENT FOR RAPID TASK ADAPTATION AND GENERALIZATION](https://arxiv.org/pdf/2310.10134)
+
+  3. `ChatPgMemory` ...
+
+- **RAG Support**: GenPilot integrates a retrieval agent that allows local resource or knowledge integration into the multi-agent system. The default implementation leverages LlamaIndex's [ChatEngine](https://docs.llamaindex.ai/en/stable/examples/chat_engine/chat_engine_best/).
+
+- **Typed Prompt and Auto Optimizer**
+
+  - https://github.com/stanfordnlp/dspy
+  
+  - https://github.com/zou-group/textgrad
+
+### Samples
 
 <details>
 <summary>This demo provides advice on what to wear when traveling to a city</summary>
@@ -57,32 +108,3 @@
 [![Watch the demo](https://asciinema.org/a/689439.svg)](https://asciinema.org/a/689439)
 
 </details>
-
-
-- **Memory** [PROCESSING]  
-
-  Memory capabilities enhance accuracy and optimize thought processes by transitioning from stateless to stateful operations. Unlike Retrieval-Augmented Generation (RAG), which builds knowledge from external sources, our approach is based on the agent's own experiences.
-
-  Zen-Agent provides an interface called `ChatMemory` that allows you to customize memory for your assistant. We offer two default memory implementations:
-
-  1. `ChatBufferMemory` A short-term memory solution designed to retrieve the most recent message along with the current session context.
-
-  2. `ChatVectorMemory` A long-term memory implementation based on LlamaIndex [vector memory](https://docs.llamaindex.ai/en/stable/examples/agent/memory/vector_memory/).
-
-  > [MemGPT: Towards LLMs as Operating Systems](https://arxiv.org/pdf/2310.08560)
-  > [CLIN: A CONTINUALLY LEARNING LANGUAGE AGENT FOR RAPID TASK ADAPTATION AND GENERALIZATION](https://arxiv.org/pdf/2310.10134)
-
-  3. `ChatPgMemory` ...
-
-- **RAG Support**
-
-We also provide a retrieval agent capable of integrating local resources or knowledge into the multi-agent system. The default implementation is based on LlamaIndex's [ChatEngine](https://docs.llamaindex.ai/en/stable/examples/chat_engine/chat_engine_best/).
-
-- **Typed Prompt and Auto Optimizer**
-
-  - https://github.com/stanfordnlp/dspy
-  - https://github.com/zou-group/textgrad
-
-- **UI Support**
- 
-  - https://github.com/streamlit/streamlit

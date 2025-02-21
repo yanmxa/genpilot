@@ -14,7 +14,7 @@ load_dotenv()
 
 StreamlitChat.context(
     {
-        "page_title": "AgentChat",
+        "page_title": "GenPilot",
         "page_icon": "🚀",
         # "layout": "wide",
         "initial_sidebar_state": "auto",

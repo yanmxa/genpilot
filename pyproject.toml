@@ -1,0 +1,31 @@
+[project]
+name = "genpilot"
+version = "0.0.2"
+description = "GenPilot streamlines the creation and management of multi-agent systems powered by Generative AI through an intuitive, user-friendly interface. It allows both developers and end-users to efficiently transform concepts and prototypes into fully realized solutions."
+authors = [{ name = "myan", email = "myan@redhat.com" }]
+readme = "README.md"
+requires-python = "<4.0,>=3.10"
+dependencies = [
+  "rich (>=13.9.4,<14.0.0)",
+  "streamlit (>=1.42.2,<2.0.0)",
+  "aisuite[all] (>=0.1.10,<0.2.0)",
+  "docstring-parser (>=0.16,<0.17)",
+]
+keywords = ["agent", "chat", "terminal", "UI"]
+license = "MIT"
+
+
+[tool.poetry]
+packages = [{ include = "genpilot" }]
+exclude = ["tests/*", "samples/*"]
+
+[tool.poetry.group.dev.dependencies]
+python-dotenv = "^1.0.1"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+
+[project.urls]
+repository = "https://github.com/yanmxa/genpilot"
