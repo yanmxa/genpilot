@@ -1,7 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Union, List
 
-import aisuite as ai
 from openai.types.chat import (
     ChatCompletionMessage,
     ChatCompletionMessageParam,

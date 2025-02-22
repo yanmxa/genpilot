@@ -12,8 +12,6 @@ from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
     ChatCompletionMessageToolCall,
 )
-import aisuite as ai
-
 import genpilot as gp
 from ..abc.agent import IAgent
 from ..abc.memory import IMemory

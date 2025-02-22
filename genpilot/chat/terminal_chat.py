@@ -1,3 +1,4 @@
+import rich.console
 import sys
 import rich
 import rich.rule
@@ -9,12 +10,19 @@ from rich.panel import Panel
 from rich.markdown import Markdown
 from rich.padding import Padding
 import threading
-from typing import Callable, Any, List, Tuple
+from rich.padding import Padding
+from typing import Callable, Any, List, Tuple, Union
 import time
+from datetime import datetime
 import json
 from enum import Enum
 
-import aisuite as ai
+from litellm import completion
+from litellm.utils import (
+    ModelResponse,
+    CustomStreamWrapper,
+    ChatCompletionDeltaToolCall,
+)
 from openai.types.chat import (
     ChatCompletionUserMessageParam,
     ChatCompletionMessage,
@@ -26,8 +34,7 @@ from openai.types.chat import (
     ChatCompletionAssistantMessageParam,
     ChatCompletionMessageToolCall,
 )
-
-from aisuite.framework import Message
+from openai.types.chat.chat_completion_message_tool_call import Function
 
 from ..abc.agent import IAgent
 from ..abc.chat import IChat
@@ -40,10 +47,10 @@ class ActionPermission(Enum):
 
 
 class TerminalChat(IChat):
-    def __init__(self, client: ai.Client, temperature: float = 0.2):
+    # Optional OpenAI params: see https://platform.openai.com/docs/api-reference/chat/create
+    def __init__(self, model_options):
         self.console = rich.get_console()
-        self.client = client
-        self.temperature = temperature
+        self.model_options = model_options
         self.avatars = {
             "user": "👦",
             "assistant": "🤖",
@@ -80,19 +87,13 @@ class TerminalChat(IChat):
 
     def forward_print(self, from_role, from_agent, to_agent, content):
         avatar = self.avatars.get(from_agent, self.avatars.get(from_role))
-        title = (
-            f"{avatar} [bold bright_cyan]{from_agent}[/bold bright_cyan] ➫ {to_agent}"
-        )
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        title = f"{avatar} [bold bright_cyan]{from_agent}[/bold bright_cyan] ➫ {to_agent}: [dim green]({timestamp})[/]"
+
+        print()
+        self.console.rule(title, align="left", style="dim")
         markdown = Markdown(content)
-        panel = Panel(
-            markdown,
-            title=title,
-            # subtitle=f"from {from_agent_name}",
-            title_align="left",
-            padding=(1, 2),
-            border_style="bright_black",  # A softer border color
-        )
-        self.console.print(panel)
+        self.console.print(Padding(markdown, (1, 0, 0, 3)), end="")
 
     def reasoning(self, agent: IAgent) -> ChatCompletionAssistantMessageParam:
         """
@@ -106,11 +107,11 @@ class TerminalChat(IChat):
 
         response = None
         try:
-            response = self.client.chat.completions.create(
+            response = completion(
                 model=agent.model,
                 messages=agent.memory.get(),
                 tools=tools,
-                temperature=self.temperature,
+                **self.model_options,
             )
         except Exception as e:
             self.console.print(agent.memory.get())
@@ -118,16 +119,69 @@ class TerminalChat(IChat):
             import traceback
 
             traceback.print_exc()
-        # self.console.print(response)
-        message_model: Message = response.choices[0].message
-        message = message_model.model_dump(mode="json")
 
+        completion_message = self.reasoning_print(response, agent)
+
+        message = completion_message.model_dump(mode="json")
         # for 'role:assistant' the following must be satisfied[('messages.2' : property 'refusal' is unsupported
         if message["role"] == "assistant" and "refusal" in message:
             del message["refusal"]
-
-        # self.console.print("-" * 50, style="dim")
         return message
+
+    def reasoning_print(
+        self, response: Union[ModelResponse, CustomStreamWrapper], agent: IAgent
+    ) -> ChatCompletionMessage:
+        # avatar = self.avatars.get(
+        #     agent.name, self.avatars.get(agent.memory.last()["role"], "")
+        # )
+        # timestamp = datetime.now().strftime("%H:%M:%S")
+        # title = (
+        #     f"{avatar} [bold cyan]{agent.name}[/bold cyan]: [dim green]({timestamp})[/]"
+        # )
+        # self.console.rule(title, align="left", style="dim")
+        # print()
+
+        completion_message = ChatCompletionMessage(role="assistant")
+        if isinstance(response, CustomStreamWrapper):
+            completion_message_tool_calls: List[ChatCompletionMessageToolCall] = []
+            completion_message_content = ""
+            for chunk in response:
+                delta = chunk.choices[0].delta
+                # print(delta, end="\n")
+                # not print tool in here
+                if delta.tool_calls is not None:
+                    for delta_tool_call in delta.tool_calls:
+                        # tool_call is ChatCompletionDeltaToolCall
+                        completion_message_tool_calls.append(
+                            ChatCompletionMessageToolCall(
+                                id=delta_tool_call.id,
+                                function=Function(
+                                    arguments=delta_tool_call.function.arguments,
+                                    name=delta_tool_call.function.name,
+                                ),
+                                type=delta_tool_call.type,
+                            )
+                        )
+                if delta.content is not None and delta.content != "":
+                    # delta print
+                    # self.console.print(delta.content, end="")
+                    completion_message_content += delta.content
+            if len(completion_message_tool_calls) > 0:
+                completion_message.tool_calls = completion_message_tool_calls
+            if completion_message_content != "":
+                completion_message.content = completion_message_content
+                # self.console.print()
+        else:
+            completion_message = response.choices[0].message
+        return completion_message
+
+    def stream_with_indent(self, text: str, indent: int = 4):
+        # Splits the text into lines and indents each line
+        indented_text = "\n".join((" " * indent) + line for line in text.splitlines())
+        return indented_text
+
+        # Streaming output (you could use sys.stdout or directly print)
+        # sys.stdout.write(indented_text + "\n")
 
     def acting(self, agent: IAgent) -> List[ChatCompletionToolMessageParam]:
         chat_message_param = agent.memory.last()
@@ -148,7 +202,7 @@ class TerminalChat(IChat):
 
             # check the permission
             if not self.before_action(
-                agent.permission,
+                agent,
                 func_name,
                 func_args,
                 func_edit=0,
@@ -158,6 +212,7 @@ class TerminalChat(IChat):
                     tool_call_id=tool_call_id,
                     content=f"Action({func_name}: {tool_call_id}) are not allowed by the user.",
                     role="tool",
+                    name=func_name,
                 )
                 tool_messages.append(tool_observation)
                 continue
@@ -194,17 +249,19 @@ class TerminalChat(IChat):
                         tool_call_id=tool_call_id,
                         content=f"{content}",
                         role="tool",
+                        name=func_name,
                     )
                 )
 
             else:
                 # invoke function
-                tool_result = self.invoke(func, func_args)
+                tool_result = self.invoke(func, func_args, agent)
                 tool_obs = ChatCompletionToolMessageParam(
                     tool_call_id=tool_call_id,
                     # tool_name=tool_call.function.name, # tool name is not supported by groq client now
                     content=f"{tool_result}",
                     role="tool",
+                    name=func_name,
                 )
                 tool_messages.append(tool_obs)
 
@@ -214,7 +271,11 @@ class TerminalChat(IChat):
             )
         return tool_messages
 
-    def invoke(self, func, args) -> str:
+    def invoke(self, func, args, agent: IAgent) -> str:
+
+        # markdown = Markdown(content)
+        # self.console.print(Padding(markdown, (1, 3)), end="")
+
         result = func(**args)
 
         text = Text(f"{result}")
@@ -229,14 +290,26 @@ class TerminalChat(IChat):
         return result
 
     def before_action(
-        self, permission, func_name, func_args, func_edit=0, functions={}
+        self, agent: IAgent, func_name, func_args, func_edit=0, functions={}
     ) -> bool:
         # check the agent function
+        permission = agent.permission
         func = functions[func_name]
         return_type = func.__annotations__.get("return")
         if return_type is not None and issubclass(return_type, IAgent):
             # TODO: add other information
             return True
+
+        avatar = self.avatars.get(
+            agent.name, self.avatars.get(agent.memory.last()["role"], "")
+        )
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        title = (
+            f"{avatar} [bold cyan]{agent.name}[/bold cyan]: [dim green]({timestamp})[/]"
+        )
+        print()
+        self.console.rule(title, align="left", style="dim")
+        print()
 
         tool_info = f"  🛠  [yellow]{func_name}[/yellow] - [dim]{func_args}[/dim]"
         if func_name == "code_executor":

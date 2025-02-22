@@ -1,6 +1,6 @@
 [project]
 name = "genpilot"
-version = "0.0.3"
+version = "0.0.5"
 description = "GenPilot streamlines the prototype for single/multi-agent systems powered by Generative AI through an intuitive, user-friendly interface."
 authors = [{ name = "myan", email = "myan@redhat.com" }]
 readme = "README.md"
@@ -8,10 +8,9 @@ requires-python = "<4.0,>=3.10"
 dependencies = [
   "rich (>=13.9.4,<14.0.0)",
   "streamlit (>=1.42.2,<2.0.0)",
-  "aisuite[all] (>=0.1.10,<0.2.0)",
-  "docstring-parser (>=0.16,<0.17)",
+  "litellm (>=1.61.13,<2.0.0)",
 ]
-keywords = ["agent", "chat", "terminal", "UI"]
+keywords = ["agent", "chat", "ai", "UI"]
 license = "MIT"
 
 

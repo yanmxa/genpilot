@@ -13,7 +13,7 @@ from openai.types.chat import (
     ChatCompletionMessageToolCall,
 )
 
-from genpilot.utils.function_to_schema import func_to_param
+from genpilot.utils.function_to_schema import func_to_param, function_to_schema
 from .memory import IMemory
 
 
@@ -74,6 +74,6 @@ class IAgent(ABC):
         # Register external functions (modules) to the agent
         # Reference: https://github.com/openai/openai-python/blob/main/src/openai/types/chat/completion_create_params.py#L251
         function_map = {tool.__name__: tool for tool in tools}
-        tool_map = {tool.__name__: func_to_param(tool) for tool in tools}
+        tool_map = {tool.__name__: function_to_schema(tool) for tool in tools}
 
         return function_map, tool_map

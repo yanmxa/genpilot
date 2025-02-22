@@ -5,14 +5,13 @@ import json
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from dotenv import load_dotenv
-import aisuite as ai
 
 import genpilot as gp
 
 load_dotenv()
 
-
-terminal = gp.TerminalChat(client=ai.Client())
+# model_options: https://platform.openai.com/docs/api-reference/chat/create
+terminal = gp.TerminalChat(model_options={"temperature": 0.2, "stream": True})
 
 
 def get_weather(location, time="now"):
@@ -22,7 +21,7 @@ def get_weather(location, time="now"):
 
 weather_observer = gp.Agent(
     name="Weather Observer",
-    model="groq:llama-3.3-70b-versatile",
+    model="groq/llama-3.3-70b-versatile",
     chat=terminal,
     tools=[get_weather],
     system="Your role focuses on retrieving and analyzing current weather conditions for a specified city. Your Responsibilities: Use the weather tool to find temperature, and other relevant weather data. Do not call the weather with same input many times",
@@ -30,7 +29,7 @@ weather_observer = gp.Agent(
 
 advisor = gp.Agent(
     name="Local Advisor",
-    model="groq:llama-3.3-70b-versatile",
+    model="groq/llama-3.3-70b-versatile",
     chat=terminal,
     system="Your role specializes in understanding local fashion trends and cultural influences to recommend suitable clothing.",
 )
@@ -48,7 +47,7 @@ def transfer_to_local_advisor(message: str) -> gp.IAgent:
 
 traveller = gp.Agent(
     name="Traveller",
-    model="groq:llama-3.3-70b-versatile",
+    model="groq/llama-3.3-70b-versatile",
     chat=terminal,
     tools=[transfer_to_weather_observer, transfer_to_local_advisor],
     system="This managerial role combines insights from both the Weather Observer and the Fashion and Culture Advisor to recommend appropriate clothing choices. Once you have the information for both Observer and Advisor. You can summarize give the final response. The final response with concise, straightforward items, like 1,2,3..",
