@@ -71,7 +71,7 @@ class Agent(IAgent):
 
     def run(
         self,
-        message: Union[ChatCompletionMessageParam, str, None],
+        message: Union[ChatCompletionMessageParam, str, None] = None,
     ) -> ChatCompletionAssistantMessageParam | str | None:
 
         # 1. verify the message, whether to stop the conversation
@@ -96,6 +96,7 @@ class Agent(IAgent):
                 or assistant_message["tool_calls"] is None
             ):
                 self.memory.clear()
+                i = 0
                 return assistant_message
 
             assistant_message["name"] = self.name  # add agent name to the function call
