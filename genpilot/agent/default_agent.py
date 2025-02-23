@@ -92,21 +92,68 @@ class Agent(IAgent):
             assistant_message: ChatCompletionAssistantMessageParam = (
                 self.chat.reasoning(agent=self)
             )
-            assistant_message["name"] = self.name
-            self.memory.add(assistant_message)
 
-            # 3. actioning
-            tool_messages: List[ChatCompletionToolMessageParam] = self.chat.acting(
-                agent=self
-            )
-
-            # 4. if tool_messages exists, then it is a tool call observation, else it is the assistant response
-            if tool_messages is None or len(tool_messages) == 0:
+            if (
+                "tool_calls" not in assistant_message
+                or assistant_message["tool_calls"] is None
+            ):
                 self.memory.clear()
                 return assistant_message
 
-            self.memory.add(tool_messages)
+            assistant_message["name"] = self.name  # add agent name to the function call
+            self.memory.add(assistant_message)
 
+            # 3. actioning
+            for tool_call in assistant_message["tool_calls"]:
+                func_name = tool_call["function"]["name"]
+                func_args = tool_call["function"]["arguments"]
+                tool_call_id = tool_call["id"]
+                if isinstance(func_args, str):
+                    func_args = json.loads(func_args)
+                # validate
+                if not func_name in self.functions:
+                    raise ValueError(f"The '{func_name}' isn't registered!")
+
+                func = self.functions[func_name]
+                return_type = func.__annotations__.get("return")
+                # agent invoking
+                if return_type is not None and issubclass(return_type, IAgent):
+                    target_agent: IAgent = func(**func_args)
+                    target_message = ChatCompletionAssistantMessageParam(
+                        role="assistant", content=func_args["message"], name=self.name
+                    )
+                    target_response: ChatCompletionAssistantMessageParam = (
+                        target_agent.run(target_message)
+                    )
+                    if target_response is None:
+                        raise ValueError(
+                            f"The agent{target_agent.name} observation is None!"
+                        )
+                    if isinstance(target_response, str):
+                        raise ValueError(
+                            f"{target_agent.name} error: {target_response}"
+                        )
+                    content = target_response["content"]
+                    self.memory.add(
+                        ChatCompletionToolMessageParam(
+                            tool_call_id=tool_call_id,
+                            content=f"{content}",
+                            role="tool",
+                            name=func_name,
+                        )
+                    )
+                # function invoking
+                else:
+                    func_result = self.chat.acting(self, func_name, func_args)
+                    self.memory.add(
+                        ChatCompletionToolMessageParam(
+                            tool_call_id=tool_call_id,
+                            # tool_name=tool_call.function.name, # tool name is not supported by groq client now
+                            content=f"{func_result}",
+                            role="tool",
+                            name=func_name,
+                        )
+                    )
             i += 1
         if i >= self._max_iter:
             self.memory.clear()

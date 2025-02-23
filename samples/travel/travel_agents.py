@@ -11,7 +11,7 @@ import genpilot as gp
 load_dotenv()
 
 # model_options: https://platform.openai.com/docs/api-reference/chat/create
-terminal = gp.TerminalChat(model_options={"temperature": 0.2, "stream": True})
+terminal = gp.TerminalChat(model_options={"temperature": 0.2, "stream": False})
 
 
 def get_weather(location, time="now"):
@@ -24,7 +24,7 @@ weather_observer = gp.Agent(
     model="groq/llama-3.3-70b-versatile",
     chat=terminal,
     tools=[get_weather],
-    system="Your role focuses on retrieving and analyzing current weather conditions for a specified city. Your Responsibilities: Use the weather tool to find temperature, and other relevant weather data. Do not call the weather with same input many times",
+    system="Your role focuses on retrieving and analyzing current weather conditions for a specified city. Your Responsibilities: Use the weather tool to find temperature. Do not call the weather with same input many times",
 )
 
 advisor = gp.Agent(
@@ -59,5 +59,5 @@ message = traveller.run("I want to go Xi 'an tomorrow. What should I wear?")
 if message is None or isinstance(message, str):
     terminal.console.print_exception(message)
 
-terminal.forward_print(message["role"], message["name"], "user", message["content"])
+# terminal.forward_print(message)
 # print("result: ", res)

@@ -22,7 +22,7 @@ class IMemory(ABC):
         pass
 
     @abstractmethod
-    def last(self) -> ChatCompletionMessageParam:
+    def last(self, default_index=1) -> ChatCompletionMessageParam:
         pass
 
     @abstractmethod

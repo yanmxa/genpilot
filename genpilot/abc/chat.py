@@ -28,7 +28,7 @@ class IChat(ABC):
         self, message: ChatCompletionMessageParam | str | None, agent: IAgent
     ) -> ChatCompletionMessageParam | None:
         """
-        Forwards the message into chat and format the output message.
+        Forwards the message of user/assistant into chat/memory and format the output message.
 
         Args:
             message (str): The input message from the user.
@@ -42,18 +42,17 @@ class IChat(ABC):
     @abstractmethod
     def reasoning(self, agent: IAgent) -> ChatCompletionAssistantMessageParam:
         """
-        Facilitates interaction with the LLM model via the aisuite client.
+        Facilitates interaction with the LLM model via the LLM client.
 
         Args:
             agent (IAgent): The agent to reason with the LLM model.
-            client (Client): The aisuite client to interact with the model.
         """
         pass
 
     @abstractmethod
-    def acting(self, agent: IAgent) -> List[ChatCompletionToolMessageParam]:
+    def acting(self, agent: IAgent, func_name, func_args) -> str:
         """
-        Enables interaction with external tools, updating the agent's memory state.
+        Enables interaction with external tools.
 
         Args:
             agent (IAgent): The agent to interact with external tools.

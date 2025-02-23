@@ -18,14 +18,13 @@ pip install genpilot
 
 ## Usage
 
-The client is initialized using `aisuite`. Please refer to [the guide for details on different model ](https://github.com/andrewyng/aisuite/tree/main/guides).
+The client is initialized using `litellm`. Please refer to [the guide for details on different providers](https://docs.litellm.ai/docs/providers).
 
 ```python
-import aisuite as ai
 import genpilot as gp
 
 # 1. User Interface: Also supports Streamlit UI, allowing all agents to share the same chat interface.
-terminal = gp.TerminalChat(client=ai.Client())
+terminal = gp.TerminalChat(model_options={"temperature": 0.2, "stream": True})
 
 # 2. Define a Tool to search and summarize information
 def search_and_summarize(query):
@@ -83,7 +82,7 @@ print(response)
 - **Typed Prompt and Auto Optimizer**
 
   - https://github.com/stanfordnlp/dspy
-  
+
   - https://github.com/zou-group/textgrad
 
 ### Samples
