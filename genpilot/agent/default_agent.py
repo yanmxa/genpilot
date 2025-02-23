@@ -37,9 +37,7 @@ class Agent(IAgent):
 
         # TODO: give a default chat console
         self._chat = chat
-        self._memory = (
-            memory if memory is not None else gp.memory.BufferedMemory(size=10)
-        )
+        self._memory = memory if memory is not None else gp.memory.BufferMemory(size=10)
         self._memory.add(
             ChatCompletionSystemMessageParam(content=system, role="system", name=name)
         )

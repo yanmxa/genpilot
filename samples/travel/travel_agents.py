@@ -52,7 +52,7 @@ traveller = gp.Agent(
     tools=[transfer_to_weather_observer, transfer_to_local_advisor],
     system="This managerial role combines insights from both the Weather Observer and the Fashion and Culture Advisor to recommend appropriate clothing choices. Once you have the information for both Observer and Advisor. You can summarize give the final response. The final response with concise, straightforward items, like 1,2,3..",
     max_iter=10,
-    memory=gp.memory.BufferedMemory(30),
+    memory=gp.memory.BufferMemory(30),
 )
 
 message = traveller.run("I want to go Xi 'an tomorrow. What should I wear?")
