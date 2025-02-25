@@ -7,7 +7,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".
 from agent import Agent, PromptAgent, FINAL_ANSWER
 from client import GroqClient, BedRockClient, ClientConfig
 from memory import ChatBufferMemory
-from tool import KubectlExecutor
+from tools import KubectlExecutor
 
 from sample.globalhub.prompt import agent_prompt_template
 

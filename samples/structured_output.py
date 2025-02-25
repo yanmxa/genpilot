@@ -4,7 +4,7 @@ import asyncio
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from client import BedRockClient, GroqClient
-from tool import wikipedia, code_executor
+from tools import wikipedia, code_executor
 from client.config import ClientConfig
 import instructor
 from type import ChatMessage

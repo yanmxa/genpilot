@@ -17,7 +17,7 @@ dspy.configure(lm=lm)
 import sys
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-from tool import code_executor, KubectlExecutor
+from tools import code_executor, KubectlExecutor
 from dspyagent import Agent
 from sample.acmdspy.prompt import EngineerPrompt
 

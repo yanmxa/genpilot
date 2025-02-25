@@ -3,7 +3,7 @@ import sys
 import asyncio
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-from tool import code_executor
+from tools import code_executor
 from agent import PromptAgent
 from client import BedRockClient, GroqClient, ClientConfig
 from dotenv import load_dotenv
