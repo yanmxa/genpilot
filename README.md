@@ -50,7 +50,7 @@ print(response)
 
 ## Why GenPilot?
 
-- **User-Friendly Interface**: GenPilot offers an intuitive interface for prototyping and quick implementation, whether through a web UI or terminal. Get started quickly and seamlessly with minimal effort.
+- **User-Friendly Interface**: GenPilot offers an intuitive interface for prototyping and quick implementation, whether through a web UI(streamlit, chainlit) or terminal. Get started quickly and seamlessly with minimal effort.
 
 - **Enhanced Autonomy**: GenPilot can internally register and invoke tools, reducing reliance on external agents and minimizing unnecessary interactions.
 
