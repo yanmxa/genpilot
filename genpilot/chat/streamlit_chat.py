@@ -1,21 +1,7 @@
 import rich.console
-import sys
 import rich
 import rich.rule
-from rich.prompt import Prompt
-from rich.syntax import Syntax
-from rich.markdown import Markdown
-from rich.text import Text
-from rich.panel import Panel
-from rich.markdown import Markdown
-from rich.padding import Padding
-import threading
-from rich.padding import Padding
 from typing import Callable, Any, List, Tuple, Union
-import time
-from datetime import datetime
-import json
-from enum import Enum
 
 from litellm import completion
 from litellm.utils import (
@@ -229,7 +215,7 @@ class StreamlitChat(IChat):
                 print_message = completion_message.content
             elif completion_message.tool_calls:
                 for tool_call in completion_message.tool_calls:
-                    print_message += get_tool_message(tool_call)
+                    print_message += self.too_output(tool_call)
         return completion_message, print_message
 
     def acting(self, agent: IAgent, func_name, func_args) -> str:
@@ -259,28 +245,27 @@ class StreamlitChat(IChat):
 
         return observation
 
+    def too_output(self, tool_call: ChatCompletionMessageToolCall):
+        if tool_call.function.name == "code_executor":
+            func_args = tool_call.function.arguments
+            # print(tool_call.function)
+            if isinstance(func_args, str):
+                import json
 
-def get_tool_message(tool_call: ChatCompletionMessageToolCall):
-    if tool_call.function.name == "code_executor":
-        func_args = tool_call.function.arguments
-        # print(tool_call.function)
-        if isinstance(func_args, str):
-            import json
-
-            func_args = json.loads(tool_call.function.arguments)
-        lang = func_args["language"]
-        code = func_args["code"]
-        print(f"{lang} -> {code}")
-        # st.code(code, language=lang)
-        return f"```{lang}\n{code}\n```"
-    else:
-        return f"""
-            <div style="
-                padding: 10px; 
-                border-radius: 5px; 
-                background-color: #FFF9C4; 
-                margin-bottom: 10px;">
-                <strong>🔧 Tool:</strong> {tool_call.function.name}<br>
-                <strong>📄 Args:</strong> {tool_call.function.arguments}
-            </div>
-            """
+                func_args = json.loads(tool_call.function.arguments)
+            lang = func_args["language"]
+            code = func_args["code"]
+            print(f"{lang} -> {code}")
+            # st.code(code, language=lang)
+            return f"```{lang}\n{code}\n```"
+        else:
+            return f"""
+                <div style="
+                    padding: 10px; 
+                    border-radius: 5px; 
+                    background-color: #FFF9C4; 
+                    margin-bottom: 10px;">
+                    <strong>🔧 Tool:</strong> {tool_call.function.name}<br>
+                    <strong>📄 Args:</strong> {tool_call.function.arguments}
+                </div>
+                """
