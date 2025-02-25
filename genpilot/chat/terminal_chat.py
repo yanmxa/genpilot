@@ -164,7 +164,7 @@ class TerminalChat(IChat):
                 delta = chunk.choices[0].delta
                 # print(delta, end="\n")
                 # not print tool in here
-                if delta.tool_calls is not None:
+                if delta.tool_calls:
                     for delta_tool_call in delta.tool_calls:
                         # tool_call is ChatCompletionDeltaToolCall
                         completion_message_tool_calls.append(

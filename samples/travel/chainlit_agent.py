@@ -1,74 +1,49 @@
-import genpilot
 import os
 import sys
 import asyncio
 import json
 
+
+import genpilot as gp
+from genpilot.chat import ChainlitChat
+from genpilot.agent import Agent
+
+
+import chainlit as cl
+import rich
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from dotenv import load_dotenv
 
-from genpilot.chat.streamlit_chat import StreamlitChat
-from genpilot.agent.default_agent import Agent
-
 load_dotenv()
 
-import streamlit as st
-import genpilot as gp
-from genpilot.chat.streamlit_chat import StreamlitChat
-from genpilot.agent.default_agent import Agent
+rprint = rich.get_console().print
+rprint("init context")
 
-st.set_page_config(
-    **{
-        "page_title": "GenPilot",
-        "page_icon": "🚀",
-        # "layout": "wide",
-        "initial_sidebar_state": "auto",
-        "menu_items": {
-            "Get Help": "https://www.extremelycoolapp.com/help",
-            "Report a bug": "https://www.extremelycoolapp.com/bug",
-            "About": "# This is a header. This is an *extremely* cool app!",
-        },
-    }
-)
-st.markdown(
-    """
-  <style>
-      .reportview-container {
-          margin-top: -2em;
-      }
-      #MainMenu {visibility: hidden;}
-      .stAppDeployButton {display:none;}
-      footer {visibility: hidden;}
-      #stDecoration {display:none;}
-  </style>
-""",
-    unsafe_allow_html=True,
-)
 
-if "chat" not in st.session_state:
+# consider make an endpoint agent for the on_chat_start
+@cl.on_chat_start
+async def init_session():
     # model_options: https://platform.openai.com/docs/api-reference/chat/create
-    st.session_state.chat = StreamlitChat(
-        model_options={"temperature": 0.2, "stream": False}
-    )
-
-if "traveller" not in st.session_state:
+    chat = ChainlitChat(model_options={"temperature": 0.2, "stream": True})
+    rprint("hello session", cl.user_session.get("id"))
 
     def get_weather(location, time="now"):
         """Get the current weather in a given location. Location MUST be a city."""
         return json.dumps({"location": location, "temperature": "65", "time": time})
 
-    weather_observer = Agent(
+    weather_observer = gp.Agent(
         name="Weather Observer",
         model="groq/llama-3.3-70b-versatile",
-        chat=st.session_state.chat,
+        chat=chat,
         tools=[get_weather],
         system="Your role focuses on retrieving and analyzing current weather conditions for a specified city. Your Responsibilities: Use the weather tool to find temperature. Do not call the weather with same input many times",
     )
 
-    advisor = Agent(
+    advisor = gp.Agent(
         name="Local Advisor",
         model="groq/llama-3.3-70b-versatile",
-        chat=st.session_state.chat,
+        chat=chat,
         system="Your role specializes in understanding local fashion trends and cultural influences to recommend suitable clothing.",
     )
 
@@ -80,17 +55,35 @@ if "traveller" not in st.session_state:
         """Call this function if you want to understanding a local fashion trends and cultural influences to recommend suitable clothing."""
         return advisor
 
-    traveller = Agent(
+    traveller = gp.Agent(
         name="Traveller",
         model="groq/llama-3.3-70b-versatile",
-        chat=st.session_state.chat,
+        chat=chat,
         tools=[transfer_to_weather_observer, transfer_to_local_advisor],
         system="This managerial role combines insights from both the Weather Observer and the Fashion and Culture Advisor to recommend appropriate clothing choices. Once you have the information for both Observer and Advisor. You can summarize give the final response. The final response with concise, straightforward items, like 1,2,3..",
         max_iter=10,
-        # memory=gp.memory.BufferMemory(30),
+        memory=gp.memory.BufferMemory(30),
     )
-    st.session_state.traveller = traveller
 
-# I want to go Xi 'an tomorrow. What should I wear?
-res = st.session_state.traveller.run()
-print("result: ", res)
+    cl.user_session.set("traveller", traveller)
+
+    rprint("session init traveller")
+
+
+@cl.on_chat_end
+def end():
+    rprint("session goodbye", cl.user_session.get("id"))
+
+
+@cl.on_message
+async def main(message: cl.Message):
+    rprint("on message")
+
+    result = asyncio.run(message.send())
+    rprint(f"sent result on message: {result}")
+
+    traveller = cl.user_session.get("traveller")
+
+    result = traveller.run(message.content)
+
+    rprint(f"traveller result on message: {result}")
