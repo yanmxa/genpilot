@@ -86,10 +86,12 @@ class Agent(IAgent):
 
         i = 0
         while i == 0 or i < self._max_iter:
-            # 2. reasoning
+            # 2. reasoning -> return none indicate try again
             assistant_message: ChatCompletionAssistantMessageParam = (
                 self.chat.reasoning(agent=self)
             )
+            if assistant_message is None:
+                continue
 
             if (
                 "tool_calls" not in assistant_message

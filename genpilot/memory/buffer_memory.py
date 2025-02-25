@@ -10,6 +10,7 @@ class BufferMemory(IMemory):
     def __init__(self, size=10):
         self._messages: List[ChatCompletionMessageParam] = []
         self._size = size
+        self._system_message = None
 
     def add(
         self, message: ChatCompletionMessageParam | List[ChatCompletionMessageParam]
@@ -18,6 +19,8 @@ class BufferMemory(IMemory):
             self._messages.extend(message)
         else:
             self._messages.append(message)
+            if message["role"] == "system":
+                self._system_message = message
 
         # clean up the over size messages
         while len(self._messages) > self._size:
@@ -39,4 +42,4 @@ class BufferMemory(IMemory):
         return self._messages[start:end]
 
     def clear(self) -> None:
-        self._messages = self._messages[1:]
+        self._messages = [self._system_message]

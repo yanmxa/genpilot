@@ -24,7 +24,7 @@ weather_observer = gp.Agent(
     model="groq/llama-3.3-70b-versatile",
     chat=terminal,
     tools=[get_weather],
-    system="Your role focuses on retrieving and analyzing current weather conditions for a specified city. Your Responsibilities: Use the weather tool to find temperature. Do not call the weather with same input many times",
+    system="Your role focuses on retrieving and analyzing current weather conditions for a specified city. Your Responsibilities: Use the weather tool to find temperature. Typically, you only call the tool once and return the result. Do not call the weather with same input many times",
 )
 
 advisor = gp.Agent(

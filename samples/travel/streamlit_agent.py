@@ -5,8 +5,9 @@ import json
 
 
 import genpilot as gp
-from genpilot.chat import ChainlitChat
+from genpilot.chat import StreamlitChat
 from genpilot.agent import Agent
+from genpilot import IAgent
 
 
 import chainlit as cl
@@ -18,15 +19,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 rprint = rich.get_console().print
-rprint("init context")
+rprint("start rendering the page")
 
 
-# consider make an endpoint agent for the on_chat_start
-@cl.on_chat_start
-async def init_session():
-    # model_options: https://platform.openai.com/docs/api-reference/chat/create
-    chat = ChainlitChat(model_options={"temperature": 0.2, "stream": True})
-    rprint("hello session", cl.user_session.get("id"))
+def agent_factory() -> IAgent:
+    chat = StreamlitChat(
+        model_options={"temperature": 0.2, "stream": False},
+        avatars={
+            "Weather Observer": "🥶",
+            "Local Advisor": "🕵️",
+            "Traveller": "👩🏼‍💼",
+            "user": "👤",
+            "assistant": "🤖",
+        },
+    )
 
     def get_weather(location, time="now"):
         """Get the current weather in a given location. Location MUST be a city."""
@@ -64,26 +70,9 @@ async def init_session():
         max_iter=10,
         memory=gp.memory.BufferMemory(30),
     )
-
-    cl.user_session.set("traveller", traveller)
-
-    rprint("session init traveller")
+    return traveller
 
 
-@cl.on_chat_end
-def end():
-    rprint("session goodbye", cl.user_session.get("id"))
+StreamlitChat.add_chat_session(agent_factory=agent_factory)
 
-
-@cl.on_message
-async def main(message: cl.Message):
-    rprint("on message")
-
-    result = asyncio.run(message.send())
-    rprint(f"sent result on message: {result}")
-
-    traveller = cl.user_session.get("traveller")
-
-    result = traveller.run(message.content)
-
-    rprint(f"traveller result on message: {result}")
+rprint("finish rendering the page")
