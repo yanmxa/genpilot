@@ -39,6 +39,11 @@ from openai.types.chat.chat_completion_message_tool_call import Function
 from ..abc.agent import IAgent
 from ..abc.chat import IChat
 
+import logging
+
+# Set logging level to WARNING or higher to suppress INFO level logs
+logging.basicConfig(level=logging.WARNING)
+
 
 class ActionPermission(Enum):
     AUTO = "auto"

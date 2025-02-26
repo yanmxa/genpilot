@@ -3,7 +3,9 @@ import sys
 import asyncio
 import json
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+# sys.path.append(
+#     os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+# )
 from dotenv import load_dotenv
 
 import genpilot as gp
