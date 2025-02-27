@@ -22,6 +22,7 @@ The client is initialized using `litellm`. Please refer to [the guide for detail
 
 ```python
 import genpilot as gp
+import asyncio
 
 # 1. User Interface: Also supports Streamlit UI, allowing all agents to share the same chat interface.
 terminal = gp.TerminalChat(model_options={"temperature": 0.2, "stream": True})
@@ -34,7 +35,7 @@ def search_and_summarize(query):
 # 3. Define an Agent for summarizing search results
 info_explorer = gp.Agent(
     name="Information Explorer",
-    model="groq:llama-3.3-70b-versatile",
+    model_name="groq:llama-3.3-70b-versatile",
     chat=terminal,
     tools=[search_and_summarize],
     system=(
@@ -44,13 +45,15 @@ info_explorer = gp.Agent(
 )
 
 # 4. Run the Agent with a query
-response = info_explorer.run("What's the latest news about AI advancements?")
+response = asyncio.run(info_explorer("What's the latest news about AI advancements?"))
 print(response)
 ```
 
 ## Why GenPilot?
 
 - **User-Friendly Interface**: GenPilot offers an intuitive interface for prototyping and quick implementation, whether through a web UI(streamlit, chainlit) or terminal. Get started quickly and seamlessly with minimal effort.
+
+- **MCP Integration**: Leverage the servers provided by MCP to enhance the ecosystem and empower agents with advanced capabilities.
 
 - **Enhanced Autonomy**: GenPilot can internally register and invoke tools, reducing reliance on external agents and minimizing unnecessary interactions.
 

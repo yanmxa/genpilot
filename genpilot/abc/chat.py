@@ -12,7 +12,7 @@ from openai.types.chat import (
     ChatCompletionMessageToolCall,
 )
 
-from .agent import IAgent
+from .agent import ActionType, IAgent
 
 
 class IChat(ABC):
@@ -24,23 +24,23 @@ class IChat(ABC):
     """
 
     @abstractmethod
-    def input(
-        self, message: ChatCompletionMessageParam | str | None, agent: IAgent
-    ) -> ChatCompletionMessageParam | None:
+    def input(self, agent: IAgent, message: ChatCompletionMessageParam = None) -> bool:
         """
-        Forwards the message of user/assistant into chat/memory and format the output message.
+        Input the the init message into agent
 
         Args:
             message (str): The input message from the user.
             agent (IAgent): The agent to process the message.
 
         Returns:
-            message: the formatted output message. None indicates the end of the conversation.
+            bool: whether input message
         """
         pass
 
     @abstractmethod
-    def reasoning(self, agent: IAgent) -> ChatCompletionAssistantMessageParam:
+    async def reasoning(
+        self, agent: IAgent, tool_schemas: List
+    ) -> ChatCompletionAssistantMessageParam:
         """
         Facilitates interaction with the LLM model via the LLM client.
 
@@ -50,7 +50,9 @@ class IChat(ABC):
         pass
 
     @abstractmethod
-    def acting(self, agent: IAgent, func_name, func_args) -> str:
+    async def acting(
+        self, agent: IAgent, action_type: ActionType, func_name, func_args
+    ) -> str:
         """
         Enables interaction with external tools.
 

@@ -1,3 +1,4 @@
+import asyncio
 import rich.console
 import sys
 import rich
@@ -36,6 +37,7 @@ from openai.types.chat import (
 )
 from openai.types.chat.chat_completion_message_tool_call import Function
 
+from genpilot.abc.agent import ActionPermission, ActionType, Attribute
 from ..abc.agent import IAgent
 from ..abc.chat import IChat
 
@@ -45,46 +47,37 @@ import logging
 logging.basicConfig(level=logging.WARNING)
 
 
-class ActionPermission(Enum):
-    AUTO = "auto"
-    ALWAYS = "always"
-    NONE = "none"
-
-
 class TerminalChat(IChat):
     # Optional OpenAI params: see https://platform.openai.com/docs/api-reference/chat/create
-    def __init__(self, model_options):
+    def __init__(self, avatars={}):
         self.console = rich.get_console()
-        self.model_options = model_options
         self.avatars = {
             "user": "👦",
             "assistant": "🤖",
             "system": "💻",
             "tool": "🛠",
-        }
+        } | avatars
         self.previous_print = ""
 
     def input(
-        self, message: ChatCompletionMessageParam | str | None, agent: IAgent
-    ) -> ChatCompletionMessageParam | None:
-        if isinstance(message, str):
+        self, agent: IAgent, message: ChatCompletionMessageParam | str = None
+    ) -> bool:
+        if not message:
+            is_stop = self._ask_input(agent, exit=["exit", "quit"])
+            if is_stop:
+                agent.attribute.memory.clear()
+                return False
+            message = agent.attribute.memory.last()
+        elif isinstance(message, str):
             message = ChatCompletionUserMessageParam(
                 content=message, role="user", name="user"
             )
-            agent.memory.add(message)
-        elif message is None:
-            is_stop = self._ask_input(
-                agent, exit=["exit", "quit"]
-            )  # add the message to memory
-            if is_stop:
-                agent.memory.clear()
-                return None
-            message = agent.memory.last()  # TODO: it may not right to get the last one
+            agent.attribute.memory.add(message)
+            self.forward_print(message=message, to_agent=agent)
         else:
-            agent.memory.add(message)
-
-        self.forward_print(message=message, to_agent=agent)
-        return message
+            agent.attribute.memory.add(message)
+            self.forward_print(message=message, to_agent=agent)
+        return True
 
     def forward_print(
         self, message: ChatCompletionMessageParam, to_agent: IAgent | str = "user"
@@ -95,7 +88,7 @@ class TerminalChat(IChat):
 
         to_agent_name = to_agent
         if not isinstance(to_agent_name, str):
-            to_agent_name = to_agent.name
+            to_agent_name = to_agent.attribute.name
 
         avatar = self.avatars.get(from_agent_name, self.avatars.get(from_role))
         timestamp = datetime.now().strftime("%H:%M:%S")
@@ -106,7 +99,9 @@ class TerminalChat(IChat):
         self.console.print(Padding(markdown, (1, 0, 1, 3)), end="")
         # print()
 
-    def reasoning(self, agent: IAgent) -> ChatCompletionAssistantMessageParam:
+    async def reasoning(
+        self, agent: IAgent, tool_schemas: List
+    ) -> ChatCompletionAssistantMessageParam:
         """
         Facilitates interaction with the LLM model via the aisuite client.
 
@@ -119,21 +114,20 @@ class TerminalChat(IChat):
         sys.stdout.write("\033[K")  # Clear the line
         # TODO: can add other action, human in loop
 
-        tools = list(agent.tools.values())
         response = None
-        avatar = self.avatars.get(agent.name, self.avatars.get("assistant"))
+        avatar = self.avatars.get(agent.attribute.name, self.avatars.get("assistant"))
         try:
             with self.console.status(
-                f"{avatar} [cyan]{agent.name} ...[/]", spinner="aesthetic"
+                f"{avatar} [cyan]{agent.attribute.name} ...[/]", spinner="aesthetic"
             ):
                 response = completion(
-                    model=agent.model,
-                    messages=agent.memory.get(),
-                    tools=tools,
-                    **self.model_options,
+                    model=agent.attribute.model_name,
+                    messages=agent.attribute.memory.get(),
+                    tools=tool_schemas,
+                    **agent.attribute.model_config,
                 )
         except Exception as e:
-            self.console.print(agent.memory.get())
+            self.console.print(agent.attribute.memory.get())
             print(f"Exception Message: {str(e)}")
             import traceback
 
@@ -192,7 +186,7 @@ class TerminalChat(IChat):
             if len(completion_message_tool_calls) > 0:
                 completion_message.tool_calls = completion_message_tool_calls
             if completion_message_content != "":
-                self.console.print("\n", end="\n")  # after print the delta content
+                self.console.print()  # after print the delta content
                 completion_message.content = completion_message_content
         else:
             completion_message = response.choices[0].message
@@ -202,37 +196,47 @@ class TerminalChat(IChat):
                 markdown = Markdown(completion_message.content)
                 self.console.print(Padding(markdown, (0, 0, 1, 3)))
                 # self.console.print(Padding(completion_message.content, (0, 0, 1, 3)))
-
         return completion_message
 
     def agent_title_print(self, agent: IAgent):
-        if self.previous_print != agent.name:
-            avatar = self.avatars.get(agent.name, self.avatars.get("assistant"))
+        if self.previous_print != agent.attribute.name:
+            avatar = self.avatars.get(
+                agent.attribute.name, self.avatars.get("assistant")
+            )
             timestamp = datetime.now().strftime("%H:%M:%S")
-            title = f"{avatar} [bright_cyan]{agent.name}[/bright_cyan] [dim green]({timestamp})[/] :"
+            title = f"{avatar} [bright_cyan]{agent.attribute.name}[/bright_cyan] [dim green]({timestamp})[/] :"
             self.console.rule(title, align="left", style="dim")
-            print()
-            self.previous_print = agent.name
+            print("")
+            self.previous_print = agent.attribute.name
 
-    def acting(self, agent: IAgent, func_name, func_args) -> str:
+    async def acting(
+        self, agent: IAgent, action_type: ActionType, func_name, func_args
+    ) -> str:
+        result = ""
         # print tool info
-        self.tool_print(agent, func_name, func_args)
+        if action_type in [ActionType.FUNCTION, ActionType.SEVER]:
+            self.tool_print(agent, func_name, func_args)
 
-        # check the permission
-        if not self.before_invoking(
-            agent,
-            func_edit=0,
-        ):
-            return f"Action({func_name}: {func_args}) are not allowed by the user."
+            # check the permission
+            if not self.before_invoking(
+                agent,
+                func_edit=0,
+            ):
+                return f"Action({func_name}: {func_args}) are not allowed by the user."
 
-        # invoke function
-        func = agent.functions[func_name]
-        result = func(**func_args)
+            # invoke function
+            with self.console.status(f"", spinner="clock"):
+                result = await agent.tool_call(func_name, func_args)
 
-        # print result
-        text = Text(f"{result}")
-        text.stylize("dim")
-        self.console.print(Padding(text, (0, 0, 1, 3)))  # Top, Right, Bottom, Left
+            # print result
+            text = Text(f"{result}")
+            text.stylize("dim")
+            self.console.print(Padding(text, (0, 0, 1, 3)))  # Top, Right, Bottom, Left
+
+        # agent forward
+        else:
+            result = agent.tool_call(func_name, func_args)
+
         return result
 
     # don't need print the agent tool
@@ -272,7 +276,7 @@ class TerminalChat(IChat):
 
     def before_invoking(self, agent: IAgent, func_edit=0) -> bool:
         # check the agent function
-        permission = agent.permission
+        permission = agent.attribute.permission
         if permission == ActionPermission.NONE:
             return True
 
@@ -297,7 +301,7 @@ class TerminalChat(IChat):
         agent: IAgent,
         exit=["exit", "quit"],
         finish=["done"],
-        prompt_ask=" 🧘 ",
+        prompt_ask="🧘 ",
     ) -> bool:
         """
 
@@ -332,16 +336,11 @@ class TerminalChat(IChat):
                     return None
 
                 case "/debug" | "/d":
-                    self.console.print(agent.memory.get())
-                    continue
-
-                case "/debugtool":
-                    for key, val in agent.functions.items():
-                        self.console.print(val)
+                    self.console.print(agent.attribute.memory.get())
                     continue
 
                 case "/pop":
-                    msg = agent.memory.last()
+                    msg = agent.attribute.memory.last()
                     self.console.print(msg)
                     continue
 
@@ -350,7 +349,7 @@ class TerminalChat(IChat):
                         user_input.replace("/add", "").replace("/a", "").strip()
                     )
                     if input_content:
-                        agent.memory.add(
+                        agent.attribute.memory.add(
                             ChatCompletionUserMessageParam(
                                 content=input_content,
                                 role="user",
@@ -360,13 +359,13 @@ class TerminalChat(IChat):
                     continue
 
                 case "/clear":
-                    agent.memory.clear()
+                    agent.attribute.memory.clear()
                     continue
 
                 case _:
-                    agent.memory.add(
+                    agent.attribute.memory.add(
                         ChatCompletionUserMessageParam(
-                            content=input_content,
+                            content=user_input,
                             role="user",
                             name="user",
                         )

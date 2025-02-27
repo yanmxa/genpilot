@@ -1,7 +1,7 @@
 import asyncio
 
-from genpilot.mcp.agent import Agent
-from genpilot.mcp.chat import TerminalChat
+from genpilot.agent import Agent
+from genpilot.chat import TerminalChat
 
 from dotenv import load_dotenv
 
@@ -21,18 +21,19 @@ async def main():
         sys.exit(1)
 
     # model_options: https://platform.openai.com/docs/api-reference/chat/create
-    terminal = TerminalChat(model_options={"temperature": 0.2, "stream": False})
+    terminal = TerminalChat()
 
     agent = Agent(
         name="Weather Observer",
-        model="groq/llama-3.3-70b-versatile",
+        model_name="groq/llama-3.3-70b-versatile",
         chat=terminal,
+        model_config={"temperature": 0.2, "stream": False},
         system="You are an AI assistant",
     )
-    logging.basicConfig(level=logging.WARNING)
     try:
-        await agent.connect_to_server(sys.argv[1])
-        await agent.chatbot()
+        await agent.register_server_tools(sys.argv[1])
+        result = await agent()
+        print(f"the result {result}")
     finally:
         await agent.cleanup()
 
