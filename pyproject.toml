@@ -1,6 +1,6 @@
 [project]
 name = "genpilot"
-version = "0.0.8"
+version = "0.0.9"
 description = "GenPilot streamlines the prototype for single/multi-agent systems powered by Generative AI through an intuitive, user-friendly interface."
 authors = [{ name = "myan", email = "myan@redhat.com" }]
 readme = "README.md"
@@ -12,6 +12,7 @@ dependencies = [
   "textual (>=2.1.1,<3.0.0)",
   "chainlit (>=2.2.1,<3.0.0)",
   "mcp (>=1.3.0,<2.0.0)",
+  "commentjson (>=0.9.0,<0.10.0)",
 ]
 keywords = ["agent", "MCP", "chat", "ai", "UI"]
 license = "MIT"

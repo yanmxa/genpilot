@@ -1,5 +1,11 @@
 import subprocess
 import traceback
+from rich.syntax import Syntax
+
+
+import os
+import sys
+import subprocess
 
 
 def code_executor(language, code):
@@ -40,7 +46,7 @@ def code_executor(language, code):
             # print("Matplotlib backend:", backend_process.stdout.strip())
             # Execute Python code
             process = subprocess.run(
-                ["python3", "-c", code], text=True, capture_output=True
+                [language, "-c", code], text=True, capture_output=True
             )
         elif language == "bash":
             process = subprocess.run(
@@ -73,3 +79,19 @@ def code_executor(language, code):
         print("An exception occurred:")
         traceback.print_exc()  # Print the full traceback
         return f"An exception occurred: {str(e)}"
+
+
+def terminal_code_executor_printer(agent, func_name, func_args):
+    import rich
+
+    console = rich.get_console()
+    console.print(f"  🛠  [yellow]{func_args['language']}[/yellow]")
+    print()
+    console.print(
+        Syntax(
+            func_args["code"],
+            func_args["language"],
+            theme="monokai",
+            line_numbers=True,
+        )
+    )

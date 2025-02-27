@@ -38,8 +38,10 @@ from openai.types.chat import (
 from openai.types.chat.chat_completion_message_tool_call import Function
 
 from genpilot.abc.agent import ActionPermission, ActionType, Attribute
+from genpilot.tools.code_executor import terminal_code_executor_printer
 from ..abc.agent import IAgent
 from ..abc.chat import IChat
+from ..tools.code_executor import code_executor, terminal_code_executor_printer
 
 import logging
 
@@ -59,12 +61,21 @@ class TerminalChat(IChat):
         } | avatars
         self.previous_print = ""
 
+        self.tool_printers = {}
+        self.register_tool_printer(code_executor, terminal_code_executor_printer)
+
+    def register_tool_printer(self, func_name: Union[Callable, str], printer: Callable):
+        name = func_name
+        if isinstance(input, Callable):
+            name = func_name.__name__
+        self.tool_printers[name] = printer
+
     def input(
         self, agent: IAgent, message: ChatCompletionMessageParam | str = None
     ) -> bool:
         if not message:
-            is_stop = self._ask_input(agent, exit=["exit", "quit"])
-            if is_stop:
+            if not self._ask_input(agent, exit=["exit", "quit"]):
+                self.console.print("👋 [blue]Goodbye![/blue] \n")
                 agent.attribute.memory.clear()
                 return False
             message = agent.attribute.memory.last()
@@ -109,10 +120,13 @@ class TerminalChat(IChat):
             agent (IAgent): The agent to reason with the LLM model.
             client (Client): The aisuite client to interact with the model.
         """
-        input("🚀 ")
+        i = input("🚀 ").strip().lower()
         sys.stdout.write("\033[F")  # Move the cursor up one line
         sys.stdout.write("\033[K")  # Clear the line
         # TODO: can add other action, human in loop
+        # self.console.print(tool_schemas)
+        if i in ["exit", "e"]:
+            return None
 
         response = None
         avatar = self.avatars.get(agent.attribute.name, self.avatars.get("assistant"))
@@ -214,7 +228,7 @@ class TerminalChat(IChat):
     ) -> str:
         result = ""
         # print tool info
-        if action_type in [ActionType.FUNCTION, ActionType.SEVER]:
+        if action_type in [ActionType.FUNCTION, ActionType.SERVER]:
             self.tool_print(agent, func_name, func_args)
 
             # check the permission
@@ -243,18 +257,12 @@ class TerminalChat(IChat):
     def tool_print(self, agent: IAgent, func_name, func_args):
         # Scenario 3: print tool
         self.agent_title_print(agent)
-        if func_name == "code_executor":
-            self.console.print(f"  🛠  [yellow]{func_args['language']}[/yellow]")
-            rich.print()
-            self.console.print(
-                Syntax(
-                    func_args["code"],
-                    func_args["language"],
-                    theme="monokai",
-                    line_numbers=True,
-                )
-            )
-        elif func_name == "kubectl_cmd":
+        if func_name in self.tool_printers:
+            self.tool_printers[func_name](agent, func_name, func_args)
+            print()
+            return
+
+        if func_name == "kubectl_cmd":
             block = func_args["command"] + func_args["input"]
             self.console.print(
                 f"  🛠  [yellow]cluster: {func_args['cluster_name']}[/yellow]"
@@ -320,20 +328,15 @@ class TerminalChat(IChat):
             print()
 
             if user_input in exit:
-                return True
+                return False
 
             if user_input in finish:
-                return False
+                return True
 
             match user_input:
 
                 case "":
                     continue
-
-                case "exit" | "e":
-                    self.console.print("👋 [blue]Goodbye![/blue]")
-                    print()
-                    return None
 
                 case "/debug" | "/d":
                     self.console.print(agent.attribute.memory.get())
@@ -370,4 +373,4 @@ class TerminalChat(IChat):
                             name="user",
                         )
                     )
-                    return False
+                    return True

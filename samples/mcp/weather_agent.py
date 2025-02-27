@@ -33,7 +33,8 @@ async def main():
     try:
         await agent.register_server_tools(sys.argv[1])
         result = await agent()
-        print(f"the result {result}")
+        # print(f"the result {result}")
+        await asyncio.sleep(1)
     finally:
         await agent.cleanup()
 

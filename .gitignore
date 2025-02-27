@@ -9,3 +9,4 @@ cache
 *.cast
 .ipynb_*
 *.egg-info
+myenv

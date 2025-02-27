@@ -25,7 +25,7 @@ class ActionPermission(Enum):
 
 class ActionType(Enum):
     AGENT = "agent"
-    SEVER = "server"
+    SERVER = "server"
     FUNCTION = "function"
     NONE = "none"
 

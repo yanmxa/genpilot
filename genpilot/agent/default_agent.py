@@ -1,7 +1,9 @@
 import os
+import anyio
 import json
+import rich.console
 import sys
-from typing import Union, Tuple, List, Protocol, List
+from typing import Dict, List, Optional, Union
 from openai.types.chat import (
     ChatCompletionMessage,
     ChatCompletionMessageParam,
@@ -15,16 +17,18 @@ from openai.types.chat import (
 import genpilot as gp
 from genpilot.abc.agent import ActionType, Attribute
 from genpilot.utils.function_to_schema import func_to_param, function_to_schema
-from tools.metadata import tool_name
+from genpilot.utils.mcp_server_config import AppConfig, McpServerConfig
+from genpilot.tools.mcp_toolkit import McpToolkit
 from ..abc.agent import IAgent
 from ..abc.memory import IMemory
 from ..abc.chat import IChat
+from rich.console import Console
+from rich.table import Table
 
-import asyncio
 from typing import Optional
 from contextlib import AsyncExitStack
 
-from mcp import ClientSession, StdioServerParameters
+from mcp import ClientSession, StdioServerParameters, types
 from mcp.client.stdio import stdio_client
 
 
@@ -54,7 +58,9 @@ class Agent(IAgent):
 
         self.functions, self.function_schemas = self.register_function_tools(tools)
         self.agents, self.agent_schemas = self.register_agent_tools(handoffs)
-        self.servers, self.server_schemas = {}, []
+
+        self.toolkits: Dict[str, McpToolkit] = {}
+        self.toolkits_schemas = []
 
         # TODO: give a default chat console
         self._attribute.memory = (
@@ -72,6 +78,7 @@ class Agent(IAgent):
         return self._attribute
 
     async def chatbot(self):
+        print()
         while True:
             if not (await self()):
                 break
@@ -83,21 +90,21 @@ class Agent(IAgent):
 
         # 1. update memory: if the message is None, don't need add to the memory
         if not self.chat.input(self, message):
-            print("input none")
             return None
 
         i = 0
         while i == 0 or i < self._max_iter:
             # 2. reasoning -> return none indicate try again
             tool_schemas = (
-                self.function_schemas + self.agent_schemas + self.server_schemas
+                self.function_schemas + self.agent_schemas + self.toolkits_schemas
             )
             assistant_message: ChatCompletionAssistantMessageParam = (
                 await self.chat.reasoning(agent=self, tool_schemas=tool_schemas)
             )
             if assistant_message is None:
-                print("assistant return none")
-                return None
+                if not self.chat.input(self, message):
+                    return None
+                continue
 
             if (
                 "tool_calls" not in assistant_message
@@ -125,8 +132,8 @@ class Agent(IAgent):
                     action_type = ActionType.FUNCTION
                 if func_name in self.agents:
                     action_type = ActionType.AGENT
-                if func_name in self.servers:
-                    action_type = ActionType.SEVER
+                if func_name in self.toolkits:
+                    action_type = ActionType.SERVER
 
                 if action_type == ActionType.NONE:
                     raise ValueError(f"The '{func_name}' isn't registered!")
@@ -177,9 +184,9 @@ class Agent(IAgent):
             func_result = func(**func_args)
 
         # servers: TODO: add print message
-        if func_name in self.servers:
-            session_tool_call = self.servers[func_name]
-            func_result = await session_tool_call(func_name, func_args)
+        if func_name in self.toolkits:
+            client_session: ClientSession = self.toolkits[func_name].session
+            func_result = await client_session.call_tool(func_name, func_args)
 
         if not func_result:
             raise ValueError(f"tool call {func_name} return none")
@@ -234,56 +241,57 @@ class Agent(IAgent):
 
         return function_map, function_schemas
 
-    async def register_server_tools(self, server_script_path: str):
+    async def register_server_tools(self, mcp_server_config_file: str):
         """Connect to an MCP server
         mount the session, stdio, write into the agent property
-
-        Args:
-            server_script_path: Path to the server script (.py or .js)
         """
-        is_python = server_script_path.endswith(".py")
-        is_js = server_script_path.endswith(".js")
-        if not (is_python or is_js):
-            raise ValueError("Server script must be a .py or .js file")
 
-        command = "python" if is_python else "node"
-        server_params = StdioServerParameters(
-            command=command, args=[server_script_path], env=None
-        )
+        app_config: AppConfig = AppConfig.load(mcp_server_config_file)
+        server_configs: List[McpServerConfig] = app_config.get_mcp_configs()
 
-        stdio_transport = await self.exit_stack.enter_async_context(
-            stdio_client(server_params)
-        )
+        toolkits: Dict[str, McpToolkit] = {}
+        schemas = []
 
-        # init session in here
-        self.stdio, self.write = stdio_transport
-        self.session = await self.exit_stack.enter_async_context(
-            ClientSession(self.stdio, self.write)
-        )
+        async def convert_toolkit(server_config: McpServerConfig):
+            server_param = server_config.server_param
+            stdio_transport = await self.exit_stack.enter_async_context(
+                stdio_client(server_param)
+            )
+            read, write = stdio_transport
+            client_session: ClientSession = await self.exit_stack.enter_async_context(
+                ClientSession(read, write)
+            )
+            await client_session.initialize()
 
-        await self.session.initialize()
+            tools_result: types.ListToolsResult = await client_session.list_tools()
+            toolkit = McpToolkit(
+                name=server_config.server_name,
+                server_param=server_param,
+                exclude_tools=server_config.exclude_tools,
+                session=client_session,
+                tools=tools_result.tools,
+            )
+            toolkits.update({tool.name: toolkit for tool in tools_result.tools})
+            schemas.extend(toolkit.tool_schemas)
 
-        # List available tools
-        response = await self.session.list_tools()
+        # TODO: consider run it the same time
+        for server_param in server_configs:
+            await convert_toolkit(server_param)
 
-        print(
-            "\nConnected to server with tools:", [tool.name for tool in response.tools]
-        )
+        self.toolkits = toolkits
+        self.toolkits_schemas = schemas
+
+        console = Console()
+        table = Table(title="Available MCP Server Tools")
+        table.add_column("Toolkit", style="cyan")
+        table.add_column("Tool Name", style="cyan")
+        table.add_column("Description", style="green")
+
+        for toolkit in self.toolkits.values():
+            for tool in toolkit.tools:
+                table.add_row(toolkit.name, tool.name, tool.description)
+        console.print(table)
         print()
-
-        self.servers = {tool.name: self.session.call_tool for tool in response.tools}
-
-        self.server_schemas = [
-            {
-                "type": "function",
-                "function": {
-                    "name": tool.name,
-                    "description": tool.description,
-                    "parameters": tool.inputSchema,
-                },
-            }
-            for tool in response.tools
-        ]
 
     async def cleanup(self):
         """Clean up resources"""

@@ -1,9 +1,6 @@
 import requests
 import json
-
-
-import requests
-import json
+import os
 
 
 def google(keyword: str) -> str:
@@ -16,16 +13,13 @@ def google(keyword: str) -> str:
 
     Returns:
     str: A string containing the description from the knowledge graph and the titles and snippets of organic results.
-
-    Raises:
-    Exception: If there is an issue with the request or response, an error message will be returned.
     """
     try:
         # Define the URL and headers
         url = "https://google.serper.dev/search"
         payload = json.dumps({"q": keyword})
         headers = {
-            "X-API-KEY": "d8efc6bc3e9bcb6240297d6f7df8800e53a24d85",  # API key
+            "X-API-KEY": os.getenv("SERPER_API_KEY"),  # API key
             "Content-Type": "application/json",  # Content type for the request
         }
 
@@ -61,4 +55,5 @@ def google(keyword: str) -> str:
         return f"An error occurred: {str(e)}"
 
 
-google("when was the chinese academy of sciences founded?")
+# result = google("when was the chinese academy of sciences founded?")
+# print(result)
