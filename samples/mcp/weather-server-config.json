@@ -1,0 +1,8 @@
+{
+  "mcp-servers": {
+    "weather-search": {
+      "command": "python",
+      "args": ["/Users/yanmeng/Workspace/cool/mcp/quickstart-resources/weather-server-python/weather.py"],
+    }
+  }
+}

@@ -46,6 +46,10 @@ traveller = gp.Agent(
     memory=gp.memory.BufferMemory(30),
 )
 
-message = traveller("I want to go Xi 'an tomorrow. What should I wear?")
-if message is None or isinstance(message, str):
-    terminal.console.print_exception(message)
+
+if __name__ == "__main__":
+    import asyncio
+
+    message = asyncio.run(
+        traveller("I want to go Xi 'an tomorrow. What should I wear?")
+    )

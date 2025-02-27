@@ -249,7 +249,7 @@ class TerminalChat(IChat):
 
         # agent forward
         else:
-            result = agent.tool_call(func_name, func_args)
+            result = await agent.tool_call(func_name, func_args)
 
         return result
 
