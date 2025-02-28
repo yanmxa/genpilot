@@ -12,16 +12,14 @@ from samples.assistant.serper import google
 
 load_dotenv()
 
-# model_options: https://platform.openai.com/docs/api-reference/chat/create
 terminal = gp.TerminalChat()
-
-model_config = model_options = {"temperature": 0.2, "stream": False}
-
 
 terminal_assistant = gp.Agent(
     name="Assistant",
-    model_name="groq/llama-3.3-70b-versatile",
-    model_config=model_config,
+    model_config={
+        "name": "groq/llama-3.3-70b-versatile",
+        "config": {"temperature": 0.2, "stream": False},
+    },
     chat=terminal,
     tools=[code_executor, google],
     system=""""

@@ -69,7 +69,7 @@ class AppConfig:
 
         # Extract tools requiring confirmation
         tools_requires_confirmation = []
-        for server_config in config["mcp-servers"].values():
+        for server_config in config["mcpServers"].values():
             tools_requires_confirmation.extend(
                 server_config.get("requires_confirmation", [])
             )
@@ -77,7 +77,7 @@ class AppConfig:
         return cls(
             mcp_servers={
                 name: ServerConfig.from_dict(server_config)
-                for name, server_config in config["mcp-servers"].items()
+                for name, server_config in config["mcpServers"].items()
             },
             tools_requires_confirmation=tools_requires_confirmation,
         )

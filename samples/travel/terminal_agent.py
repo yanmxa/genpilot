@@ -4,10 +4,7 @@ import genpilot as gp
 
 load_dotenv()
 
-# model_options: https://platform.openai.com/docs/api-reference/chat/create
 terminal = gp.TerminalChat()
-
-model_config = model_options = {"temperature": 0.2, "stream": False}
 
 
 def get_weather(location, time="now"):
@@ -19,8 +16,10 @@ def get_weather(location, time="now"):
 
 weather_observer = gp.Agent(
     name="Weather Observer",
-    model_name="groq/llama-3.3-70b-versatile",
-    model_config=model_config,
+    model_config={
+        "name": "groq/llama-3.3-70b-versatile",
+        "config": {"temperature": 0.2, "stream": False},
+    },
     chat=terminal,
     tools=[get_weather],
     description="I can get the current weather conditions for a specified city.",
@@ -29,8 +28,10 @@ weather_observer = gp.Agent(
 
 advisor = gp.Agent(
     name="Local Advisor",
-    model_name="groq/llama-3.3-70b-versatile",
-    model_config=model_config,
+    model_config={
+        "name": "groq/llama-3.3-70b-versatile",
+        "config": {"temperature": 0.2, "stream": False},
+    },
     chat=terminal,
     system="Specializes in understanding local fashion trends and cultural influences to recommend suitable clothing.",
 )
@@ -38,7 +39,10 @@ advisor = gp.Agent(
 
 traveller = gp.Agent(
     name="Traveller",
-    model_name="groq/llama-3.3-70b-versatile",
+    model_config={
+        "name": "groq/llama-3.3-70b-versatile",
+        "config": {"temperature": 0.2, "stream": False},
+    },
     chat=terminal,
     handoffs=[weather_observer, advisor],
     system="This managerial role combines insights from both the Weather Observer and the Fashion and Culture Advisor to recommend appropriate clothing choices. Once you have the information for both Observer and Advisor. You can summarize give the final response. The final response with concise, straightforward items, like 1,2,3..",

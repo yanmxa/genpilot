@@ -53,7 +53,7 @@ print(response)
 
 - **User-Friendly Interface**: GenPilot offers an intuitive interface for prototyping and quick implementation, whether through a web UI(streamlit, chainlit) or terminal. Get started quickly and seamlessly with minimal effort.
 
-- **MCP Agent**: Leverage the mcp-servers provided by the ecosystem to empower agents, enabling them to connect with and interact in a richer, more expansive world.
+- **MCP Agent**: Leverage the mcpServers provided by the ecosystem to empower agents, enabling them to connect with and interact in a richer, more expansive world.
 
 - **Enhanced Autonomy**: GenPilot can internally register and invoke tools, reducing reliance on external agents and minimizing unnecessary interactions.
 

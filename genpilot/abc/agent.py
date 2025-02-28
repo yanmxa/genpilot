@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Callable, Any
+import typing
+from typing_extensions import Literal, Required, TypedDict, Optional
 from typing import Union, List, Dict
 from dataclasses import dataclass
 
@@ -28,6 +29,12 @@ class ActionType(Enum):
     SERVER = "server"
     FUNCTION = "function"
     NONE = "none"
+
+
+class ModelConfig(TypedDict, total=False):
+    name: Required[str]
+    # model_options: https://platform.openai.com/docs/api-reference/chat/create
+    config: dict[str, any] = {}
 
 
 @dataclass

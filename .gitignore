@@ -10,3 +10,6 @@ cache
 .ipynb_*
 *.egg-info
 myenv
+
+node_modules
+package-lock.json

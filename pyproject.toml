@@ -1,6 +1,6 @@
 [project]
 name = "genpilot"
-version = "0.0.9"
+version = "0.1.0"
 description = "GenPilot streamlines the prototype for single/multi-agent systems powered by Generative AI through an intuitive, user-friendly interface."
 authors = [{ name = "myan", email = "myan@redhat.com" }]
 readme = "README.md"

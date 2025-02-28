@@ -20,14 +20,15 @@ async def main():
         print("Usage: python client.py <path_to_server_script>")
         sys.exit(1)
 
-    # model_options: https://platform.openai.com/docs/api-reference/chat/create
     terminal = TerminalChat()
 
     agent = Agent(
-        name="Weather Observer",
-        model_name="groq/llama-3.3-70b-versatile",
+        name="Assistant",
         chat=terminal,
-        model_config={"temperature": 0.2, "stream": False},
+        model_config={
+            "name": "groq/llama-3.3-70b-versatile",
+            "config": {"temperature": 0.2, "stream": False},
+        },
         system="You are an AI assistant",
     )
     try:

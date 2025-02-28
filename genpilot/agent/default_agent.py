@@ -15,7 +15,7 @@ from openai.types.chat import (
     ChatCompletionMessageToolCall,
 )
 import genpilot as gp
-from genpilot.abc.agent import ActionType, Attribute
+from genpilot.abc.agent import ActionType, Attribute, ModelConfig
 from genpilot.utils.function_to_schema import func_to_param, function_to_schema
 from genpilot.utils.mcp_server_config import AppConfig, McpServerConfig
 from genpilot.tools.mcp_toolkit import McpToolkit
@@ -43,15 +43,14 @@ class Agent(IAgent):
         memory: IMemory = None,
         chat: IChat = None,
         description="",
-        model_name="",
-        model_config={},
+        model_config: ModelConfig = None,
         # TODO: consider introduce terminate condition with autogen 4.0
         max_iter=6,
     ):
         self._attribute = Attribute(
             name,
-            model_name=model_name,
-            model_config=model_config,
+            model_name=model_config["name"],
+            model_config=model_config["config"],
             description=description or system,
         )
         self.chat = chat
@@ -186,7 +185,14 @@ class Agent(IAgent):
         # servers: TODO: add print message
         if func_name in self.toolkits:
             client_session: ClientSession = self.toolkits[func_name].session
-            func_result = await client_session.call_tool(func_name, func_args)
+            func_result: types.CallToolResult = await client_session.call_tool(
+                func_name, func_args
+            )
+            if func_result.isError:
+                raise ValueError(
+                    f"tool call {func_name} return err {func_result.content}"
+                )
+            func_result = func_result.content
 
         if not func_result:
             raise ValueError(f"tool call {func_name} return none")
