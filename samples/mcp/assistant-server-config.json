@@ -3,6 +3,14 @@
     "hello-server": {
       "command": "node",
       "args": ["./samples/mcp/server/build/index.js"]
+    },
+    "kubernetes": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "kubernetes-mcp-server@latest"
+      ],
+      "enabled": false
     }
   }
 }

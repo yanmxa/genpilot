@@ -1,7 +1,8 @@
 [project]
 name = "genpilot"
 version = "0.1.0"
-description = "GenPilot streamlines the prototype for single/multi-agent systems powered by Generative AI through an intuitive, user-friendly interface."
+description = "GenPilot streamlines the creation of multi-agent systems powered by Generative AI. Adhering to the Model Context Protocol (MCP), it ensures seamless integration with MCP servers through an intuitive terminal or web interface"
+
 authors = [{ name = "myan", email = "myan@redhat.com" }]
 readme = "README.md"
 requires-python = "<4.0,>=3.10"

@@ -6,7 +6,7 @@
 
 # GenPilot
 
-**GenPilot** streamlines the creation and management of multi-agent systems powered by Generative AI through an intuitive, user-friendly interface. It allows both developers and end-users to efficiently transform concepts and prototypes into fully realized solutions.
+**GenPilot** streamlines the creation, development, and management of single and multi-agent systems powered by Generative AI. Adhering to the Model Context Protocol (MCP), it ensures seamless integration with a variety of MCP servers, enabling both developers and end-users to efficiently transform concepts and prototypes into fully realized solutions. All of this is facilitated through an intuitive, user-friendly terminal and web interface.
 
 ## Installation
 
@@ -25,7 +25,7 @@ import genpilot as gp
 import asyncio
 
 # 1. User Interface: Also supports Streamlit UI, allowing all agents to share the same chat interface.
-terminal = gp.TerminalChat(model_options={"temperature": 0.2, "stream": True})
+terminal = gp.TerminalChat()
 
 # 2. Define a Tool to search and summarize information
 def search_and_summarize(query):
@@ -35,7 +35,9 @@ def search_and_summarize(query):
 # 3. Define an Agent for summarizing search results
 info_explorer = gp.Agent(
     name="Information Explorer",
-    model_name="groq:llama-3.3-70b-versatile",
+    model_config={
+        "name": "groq/llama-3.3-70b-versatile",
+    },
     chat=terminal,
     tools=[search_and_summarize],
     system=(
@@ -51,9 +53,11 @@ print(response)
 
 ## Why GenPilot?
 
-- **User-Friendly Interface**: GenPilot offers an intuitive interface for prototyping and quick implementation, whether through a web UI(streamlit, chainlit) or terminal. Get started quickly and seamlessly with minimal effort.
+- **MCP Agent**: Leverage the MCP servers provided by the ecosystem to empower agents, allowing them to connect and interact within a richer, more expansive environment.
 
-- **MCP Agent**: Leverage the mcpServers provided by the ecosystem to empower agents, enabling them to connect with and interact in a richer, more expansive world.
+- **Multi-Agent System**: Seamlessly scale from single-agent tasks to complex multi-agent workflows, inspired by [Routines and Handoffs](https://cookbook.openai.com/examples/orchestrating_agents#executing-routines).
+
+- **User-Friendly Interface**: Offers an intuitive interface for prototyping and quick implementation, whether through a web UI (Streamlit, Chainlit) or terminal. Get started quickly and effortlessly with minimal effort.
 
 - **Enhanced Autonomy**: GenPilot can internally register and invoke tools, reducing reliance on external agents and minimizing unnecessary interactions.
 
@@ -63,11 +67,9 @@ print(response)
 
   GenPilot's actions are governed by three permission levels:
 
-  - **`auto`**: Permission requested only for system/environment-modifying actions.
-  - **`always`**: Permission requested for all actions.  
-  - **`none`**: No permission requests. 
-
-- **Multi-Agent System**: Seamlessly scale from single-agent tasks to complex multi-agent workflows, inspired by [Routines and Handoffs](https://cookbook.openai.com/examples/orchestrating_agents#executing-routines).
+  - **`auto`**: Permission requested only for system/environment-modifying actions
+  - **`always`**: Permission requested for all actions  
+  - **`none`**: No permission requests
 
 - **Memory** [PROCESSING]: GenPilot enhances accuracy with customizable memory:
 

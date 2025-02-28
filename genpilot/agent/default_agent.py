@@ -1,8 +1,4 @@
-import os
-import anyio
 import json
-import rich.console
-import sys
 from typing import Dict, List, Optional, Union
 from openai.types.chat import (
     ChatCompletionMessage,
@@ -25,7 +21,6 @@ from ..abc.chat import IChat
 from rich.console import Console
 from rich.table import Table
 
-from typing import Optional
 from contextlib import AsyncExitStack
 
 from mcp import ClientSession, StdioServerParameters, types
