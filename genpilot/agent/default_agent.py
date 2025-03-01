@@ -275,6 +275,8 @@ class Agent(IAgent):
             toolkits.update({tool.name: toolkit for tool in tools_result.tools})
             schemas.extend(toolkit.tool_schemas)
 
+            await client_session.list_resources()
+
         # TODO: consider run it the same time
         for server_param in server_configs:
             await convert_toolkit(server_param)
@@ -288,9 +290,16 @@ class Agent(IAgent):
         table.add_column("Tool Name", style="cyan")
         table.add_column("Description", style="green")
 
+        seen_tools = set()
+
         for toolkit in self.toolkits.values():
             for tool in toolkit.tools:
-                table.add_row(toolkit.name, tool.name, tool.description)
+                key = (toolkit.name, tool.name)
+                # If the key hasn't been seen before, add it to the table and the set
+                if key not in seen_tools:
+                    table.add_row(toolkit.name, tool.name, tool.description)
+                    # table.add_row(toolkit["name"], tool["name"], tool["description"])
+                    seen_tools.add(key)
         console.print(table)
         print()
 

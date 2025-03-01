@@ -17,6 +17,7 @@ import time
 from datetime import datetime
 import json
 from enum import Enum
+from mcp import StdioServerParameters, types, ClientSession
 
 from litellm import completion
 from litellm.utils import (
@@ -131,6 +132,10 @@ class TerminalChat(IChat):
         response = None
         avatar = self.avatars.get(agent.attribute.name, self.avatars.get("assistant"))
         try:
+            # import rich
+
+            # rprint = rich.get_console().print
+            # rprint(agent.attribute.memory.get())
             with self.console.status(
                 f"{avatar} [cyan]{agent.attribute.name} ...[/]", spinner="aesthetic"
             ):
@@ -166,6 +171,11 @@ class TerminalChat(IChat):
     def reasoning_print(
         self, response: Union[ModelResponse, CustomStreamWrapper], agent: IAgent
     ) -> ChatCompletionMessage:
+
+        # import rich
+
+        # rprint = rich.get_console().print
+        # rprint(response)
 
         # not print agent tools calls in this function, only print the content
         completion_message = ChatCompletionMessage(role="assistant")
@@ -228,7 +238,7 @@ class TerminalChat(IChat):
     ) -> str:
         result = ""
         # print tool info
-        if action_type in [ActionType.FUNCTION, ActionType.SERVER]:
+        if action_type == ActionType.FUNCTION:
             self.tool_print(agent, func_name, func_args)
 
             # check the permission
@@ -247,6 +257,35 @@ class TerminalChat(IChat):
             text.stylize("dim")
             self.console.print(Padding(text, (0, 0, 1, 3)))  # Top, Right, Bottom, Left
 
+        # print tool info
+        elif action_type == ActionType.SERVER:
+            self.tool_print(agent, func_name, func_args)
+
+            # check the permission
+            if not self.before_invoking(
+                agent,
+                func_edit=0,
+            ):
+                return f"Action({func_name}: {func_args}) are not allowed by the user."
+
+            # invoke function
+            with self.console.status(f"", spinner="clock"):
+                contents: types.CallToolResult = await agent.tool_call(
+                    func_name, func_args
+                )
+                result = contents
+
+            for content in contents:
+                if content.type == "text":
+                    # print result
+                    text = Markdown(content.text.strip(), style="dim")
+                    # text.stylize("dim")
+                else:
+                    text = Text(content)
+                    text.stylize("dim")
+                self.console.print(
+                    Padding(text, (0, 0, 0, 3))
+                )  # Top, Right, Bottom, Left
         # agent forward
         else:
             result = await agent.tool_call(func_name, func_args)
@@ -343,7 +382,7 @@ class TerminalChat(IChat):
                     continue
 
                 case "/pop":
-                    msg = agent.attribute.memory.last()
+                    msg = agent.attribute.memory.pop()
                     self.console.print(msg)
                     continue
 

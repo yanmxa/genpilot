@@ -29,7 +29,7 @@ async def main():
             "name": "groq/llama-3.3-70b-versatile",
             "config": {"temperature": 0.2, "stream": False},
         },
-        system="You are an AI assistant",
+        system="You are an AI assistant, If you finished the task, just return the answer in the content",
     )
     try:
         await agent.register_server_tools(sys.argv[1])
