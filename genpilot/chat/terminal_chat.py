@@ -158,6 +158,8 @@ class TerminalChat(IChat):
         # for 'role:assistant' the following must be satisfied[('messages.2' : property 'refusal' is unsupported
         if message["role"] == "assistant" and "refusal" in message:
             del message["refusal"]
+        if message["role"] == "assistant" and "reasoning" in message:
+            del message["reasoning"]
         return message
 
     # 1. print agent title
@@ -277,12 +279,9 @@ class TerminalChat(IChat):
 
             for content in contents:
                 if content.type == "text":
-                    # print result
-                    text = Markdown(content.text.strip(), style="dim")
-                    # text.stylize("dim")
+                    text = Text(content.text.strip(), style="dim")
                 else:
-                    text = Text(content)
-                    text.stylize("dim")
+                    text = Text(content, style="dim")
                 self.console.print(
                     Padding(text, (0, 0, 1, 3))
                 )  # Top, Right, Bottom, Left
@@ -315,6 +314,25 @@ class TerminalChat(IChat):
                     line_numbers=True,
                 )
             )
+        elif func_name == "kubectl_executor":
+            block = func_args["command"]
+            cluster = "default"
+            if "cluster" in func_args:
+                if func_args.get("cluster"):
+                    cluster = func_args.get("cluster")
+                else:
+                    del func_args["cluster"]
+            self.console.print(f"  🛠  [yellow]cluster: {cluster}[/yellow]")
+            rich.print()
+            self.console.print(
+                Syntax(
+                    block,
+                    "shell",
+                    theme="monokai",
+                    line_numbers=True,
+                )
+            )
+
         else:
             self.console.print(
                 f"  🛠  [yellow]{func_name}[/yellow] - [dim]{func_args}[/dim]"
@@ -379,11 +397,13 @@ class TerminalChat(IChat):
 
                 case "/debug" | "/d":
                     self.console.print(agent.attribute.memory.get())
+                    print()
                     continue
 
                 case "/pop":
                     msg = agent.attribute.memory.pop()
                     self.console.print(msg)
+                    print()
                     continue
 
                 case "/add" | "/a":
