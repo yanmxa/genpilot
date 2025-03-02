@@ -284,7 +284,7 @@ class TerminalChat(IChat):
                     text = Text(content)
                     text.stylize("dim")
                 self.console.print(
-                    Padding(text, (0, 0, 0, 3))
+                    Padding(text, (0, 0, 1, 3))
                 )  # Top, Right, Bottom, Left
         # agent forward
         else:
