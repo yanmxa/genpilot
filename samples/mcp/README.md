@@ -27,6 +27,10 @@
         "run_command",
         "run_script"
       ]
+    },
+     "multicluster-mcp-server": {
+      "command": "node",
+      "args": [".../multicluster-mcp-server/build/index.js"]
     }
   }
 }

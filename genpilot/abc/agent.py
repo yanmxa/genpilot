@@ -71,3 +71,15 @@ class IAgent(ABC):
     @abstractmethod
     async def tool_call(self, func_name, func_args) -> str:
         pass
+
+
+def final_answer(answer_content: str):
+    """
+    This function is called when the final answer is obtained.
+    The provided content represents the resolution of the most
+    recent task or issue.
+
+    Parameters:
+        answer_content (str): The final answer content for the latest task or issue.
+    """
+    return answer_content

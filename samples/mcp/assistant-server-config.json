@@ -1,8 +1,11 @@
 {
   "mcpServers": {
     "multicluster-mcp-server": {
-      "command": "node",
-      "args": ["/Users/yanmeng/Workspace/cool/multicluster-mcp-server/build/index.js"]
+      "command": "npx",
+      "args": [
+        "-y",
+        "multicluster-mcp-server@latest"
+      ]
     },
     "kubernetes": {
       "command": "npx",

@@ -38,7 +38,7 @@ from openai.types.chat import (
 )
 from openai.types.chat.chat_completion_message_tool_call import Function
 
-from genpilot.abc.agent import ActionPermission, ActionType, Attribute
+from genpilot.abc.agent import ActionPermission, ActionType, Attribute, final_answer
 from genpilot.tools.code_executor import terminal_code_executor_printer
 from ..abc.agent import IAgent
 from ..abc.chat import IChat
@@ -67,7 +67,7 @@ class TerminalChat(IChat):
 
     def register_tool_printer(self, func_name: Union[Callable, str], printer: Callable):
         name = func_name
-        if isinstance(input, Callable):
+        if isinstance(func_name, Callable):
             name = func_name.__name__
         self.tool_printers[name] = printer
 
@@ -126,7 +126,7 @@ class TerminalChat(IChat):
         sys.stdout.write("\033[K")  # Clear the line
         # TODO: can add other action, human in loop
         # self.console.print(tool_schemas)
-        if i in ["exit", "e"]:
+        if i in ["exit", "e", "quit"]:
             return None
 
         response = None
@@ -216,12 +216,25 @@ class TerminalChat(IChat):
                 completion_message.content = completion_message_content
         else:
             completion_message = response.choices[0].message
+
+            # if final answer, convert it into content message
+            if completion_message.tool_calls and len(completion_message.tool_calls) > 0:
+                func_name = completion_message.tool_calls[0].function.name
+                func_args = completion_message.tool_calls[0].function.arguments
+                if func_name == final_answer.__name__:
+                    if isinstance(func_args, str):
+                        func_args = json.loads(func_args)
+                    content = func_args["answer_content"]
+                    completion_message.content = f"Answer: {content}"
+                    completion_message.tool_calls = None
+
             if completion_message.content:
                 # Scenario 2: print complete content
                 self.agent_title_print(agent)
                 markdown = Markdown(completion_message.content)
                 self.console.print(Padding(markdown, (0, 0, 1, 3)))
                 # self.console.print(Padding(completion_message.content, (0, 0, 1, 3)))
+
         return completion_message
 
     def agent_title_print(self, agent: IAgent):

@@ -11,7 +11,7 @@ from openai.types.chat import (
     ChatCompletionMessageToolCall,
 )
 import genpilot as gp
-from genpilot.abc.agent import ActionType, Attribute, ModelConfig
+from genpilot.abc.agent import ActionType, Attribute, final_answer, ModelConfig
 from genpilot.utils.function_to_schema import func_to_param, function_to_schema
 from genpilot.utils.mcp_server_config import AppConfig, McpServerConfig
 from genpilot.tools.mcp_toolkit import McpToolkit
@@ -33,14 +33,15 @@ class Agent(IAgent):
         self,
         name,
         system,
-        tools=[],
-        handoffs=[],
+        tools: List[callable] = [],
+        handoffs: List[IAgent] = [],
         memory: IMemory = None,
         chat: IChat = None,
-        description="",
+        description: str = "",
         model_config: ModelConfig = None,
         # TODO: consider introduce terminate condition with autogen 4.0
-        max_iter=6,
+        max_iter: str = 6,
+        mcp_server_config: str = "",
     ):
         self._attribute = Attribute(
             name,
@@ -50,6 +51,7 @@ class Agent(IAgent):
         )
         self.chat = chat
 
+        # tools.append(final_answer)
         self.functions, self.function_schemas = self.register_function_tools(tools)
         self.agents, self.agent_schemas = self.register_agent_tools(handoffs)
 
@@ -65,6 +67,7 @@ class Agent(IAgent):
         )
 
         self._max_iter = max_iter
+        self.mcp_server_config = mcp_server_config
         self.exit_stack = AsyncExitStack()
 
     @property
@@ -95,24 +98,25 @@ class Agent(IAgent):
             assistant_message: ChatCompletionAssistantMessageParam = (
                 await self.chat.reasoning(agent=self, tool_schemas=tool_schemas)
             )
+
             if assistant_message is None:
+                # input return false, means exiting
                 if not self.chat.input(self, message):
+                    self._attribute.memory.clear()
                     return None
                 continue
+            assistant_message["name"] = self._attribute.name
+            self._attribute.memory.add(assistant_message)
 
+            # if not contains the tool call, return the message as result
             if (
                 "tool_calls" not in assistant_message
                 or assistant_message["tool_calls"] is None
             ):
-                self._attribute.memory.clear()
-                i = 0
+                # self._attribute.memory.clear()
                 return assistant_message
 
-            assistant_message["name"] = self._attribute.name
-
-            self._attribute.memory.add(assistant_message)
-
-            # 3. actioning
+            # 3. acting
             for tool_call in assistant_message["tool_calls"]:
                 func_name = tool_call["function"]["name"]
                 func_args = tool_call["function"]["arguments"]
@@ -149,7 +153,7 @@ class Agent(IAgent):
 
             i += 1
         if i >= self._max_iter:
-            self.memory.clear()
+            self._attribute.memory.clear()
             return f"Reached maximum iterations: {self._max_iter}!"
 
     async def tool_call(self, func_name, func_args) -> str:
@@ -179,6 +183,7 @@ class Agent(IAgent):
 
         # servers: TODO: add print message
         if func_name in self.toolkits:
+
             client_session: ClientSession = self.toolkits[func_name].session
             func_result: types.CallToolResult = await client_session.call_tool(
                 func_name, func_args
@@ -242,12 +247,11 @@ class Agent(IAgent):
 
         return function_map, function_schemas
 
-    async def register_server_tools(self, mcp_server_config_file: str):
+    async def connect_to_mcp_server(self, reconnect: bool = False):
         """Connect to an MCP server
         mount the session, stdio, write into the agent property
         """
-
-        app_config: AppConfig = AppConfig.load(mcp_server_config_file)
+        app_config: AppConfig = AppConfig.load(self.mcp_server_config)
         server_configs: List[McpServerConfig] = app_config.get_mcp_configs()
 
         toolkits: Dict[str, McpToolkit] = {}
@@ -264,6 +268,7 @@ class Agent(IAgent):
             )
             await client_session.initialize()
 
+            # list available tools
             tools_result: types.ListToolsResult = await client_session.list_tools()
             toolkit = McpToolkit(
                 name=server_config.server_name,
@@ -275,7 +280,7 @@ class Agent(IAgent):
             toolkits.update({tool.name: toolkit for tool in tools_result.tools})
             schemas.extend(toolkit.tool_schemas)
 
-            await client_session.list_resources()
+            # await client_session.list_resources()
 
         # TODO: consider run it the same time
         for server_param in server_configs:
@@ -283,6 +288,9 @@ class Agent(IAgent):
 
         self.toolkits = toolkits
         self.toolkits_schemas = schemas
+
+        if reconnect:
+            return
 
         console = Console()
         table = Table(title="Available MCP Server Tools")
@@ -300,8 +308,9 @@ class Agent(IAgent):
                     table.add_row(toolkit.name, tool.name, tool.description)
                     # table.add_row(toolkit["name"], tool["name"], tool["description"])
                     seen_tools.add(key)
-        console.print(table)
         print()
+        console.print(table)
+        # print()
 
     async def cleanup(self):
         """Clean up resources"""
