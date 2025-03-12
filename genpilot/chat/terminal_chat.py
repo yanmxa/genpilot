@@ -2,6 +2,7 @@ import asyncio
 import rich.console
 import sys
 import rich
+import os
 import rich.rule
 from rich.prompt import Prompt
 from rich.syntax import Syntax
@@ -121,13 +122,15 @@ class TerminalChat(IChat):
             agent (IAgent): The agent to reason with the LLM model.
             client (Client): The aisuite client to interact with the model.
         """
-        i = input("🚀 ").strip().lower()
-        sys.stdout.write("\033[F")  # Move the cursor up one line
-        sys.stdout.write("\033[K")  # Clear the line
-        # TODO: can add other action, human in loop
-        # self.console.print(tool_schemas)
-        if i in ["exit", "e", "quit"]:
-            return None
+        if agent.attribute.human_on_loop:
+            i = input("🚀 ").strip().lower()
+            sys.stdout.write("\033[F")  # Move the cursor up one line
+            sys.stdout.write("\033[K")  # Clear the line
+            # TODO: can add other action, human in loop
+            # self.console.print(tool_schemas)
+            if i in ["exit", "e", "quit"]:
+                if self._ask_input(agent, exit=["bye", "bye"], finish=["quit", "q"]):
+                    return None
 
         response = None
         avatar = self.avatars.get(agent.attribute.name, self.avatars.get("assistant"))
@@ -189,8 +192,14 @@ class TerminalChat(IChat):
                 delta = chunk.choices[0].delta
                 # print(delta, end="\n")
                 # not print tool in here
-                if delta.tool_calls:
+                if delta.tool_calls and len(delta.tool_calls) > 0:
                     for delta_tool_call in delta.tool_calls:
+                        # for the final function call
+                        content = self.get_answer_tool_result(delta_tool_call)
+                        if content:
+                            completion_message_content = f"{content}"
+                            break
+
                         # tool_call is ChatCompletionDeltaToolCall
                         completion_message_tool_calls.append(
                             ChatCompletionMessageToolCall(
@@ -219,13 +228,9 @@ class TerminalChat(IChat):
 
             # if final answer, convert it into content message
             if completion_message.tool_calls and len(completion_message.tool_calls) > 0:
-                func_name = completion_message.tool_calls[0].function.name
-                func_args = completion_message.tool_calls[0].function.arguments
-                if func_name == final_answer.__name__:
-                    if isinstance(func_args, str):
-                        func_args = json.loads(func_args)
-                    content = func_args["answer_content"]
-                    completion_message.content = f"Answer: {content}"
+                content = self.get_answer_tool_result(completion_message.tool_calls[0])
+                if content:
+                    completion_message.content = f"{content}"
                     completion_message.tool_calls = None
 
             if completion_message.content:
@@ -236,6 +241,15 @@ class TerminalChat(IChat):
                 # self.console.print(Padding(completion_message.content, (0, 0, 1, 3)))
 
         return completion_message
+
+    def get_answer_tool_result(self, tool_call: ChatCompletionMessageToolCall) -> str:
+        func_args = tool_call.function.arguments
+        if tool_call.function.name == final_answer.__name__:
+            if isinstance(func_args, str):
+                func_args = json.loads(func_args)
+            content = func_args["answer_content"]
+            return f"📌 {content}"
+        return None
 
     def agent_title_print(self, agent: IAgent):
         if self.previous_print != agent.attribute.name:
@@ -264,7 +278,7 @@ class TerminalChat(IChat):
                 return f"Action({func_name}: {func_args}) are not allowed by the user."
 
             # invoke function
-            with self.console.status(f"", spinner="clock"):
+            with self.console.status(f"", spinner="star"):
                 result = await agent.tool_call(func_name, func_args)
 
             # print result
@@ -284,7 +298,7 @@ class TerminalChat(IChat):
                 return f"Action({func_name}: {func_args}) are not allowed by the user."
 
             # invoke function
-            with self.console.status(f"", spinner="clock"):
+            with self.console.status(f"", spinner="star"):
                 contents: types.CallToolResult = await agent.tool_call(
                     func_name, func_args
                 )
@@ -316,7 +330,7 @@ class TerminalChat(IChat):
         if func_name == "kubectl_cmd":
             block = func_args["command"] + func_args["input"]
             self.console.print(
-                f"  🛠  [yellow]cluster: {func_args['cluster_name']}[/yellow]"
+                f"   🛠  [yellow]cluster: {func_args['cluster_name']}[/yellow]"
             )
             rich.print()
             self.console.print(
@@ -335,7 +349,7 @@ class TerminalChat(IChat):
                     cluster = func_args.get("cluster")
                 else:
                     del func_args["cluster"]
-            self.console.print(f"  🛠  [yellow]cluster: {cluster}[/yellow]")
+            self.console.print(f"   🛠  [yellow]cluster: {cluster}[/yellow]")
             rich.print()
             self.console.print(
                 Syntax(
@@ -348,7 +362,7 @@ class TerminalChat(IChat):
 
         else:
             self.console.print(
-                f"  🛠  [yellow]{func_name}[/yellow] - [dim]{func_args}[/dim]"
+                f"   🛠  [yellow]{func_name}[/yellow] - [dim]{func_args}[/dim]"
             )
         rich.print()
 
@@ -390,7 +404,7 @@ class TerminalChat(IChat):
             prompt_ask (str, optional): _description_. Defaults to " 🧘 ".
 
         Returns:
-            bool: is stop
+            bool: is go on or finished
         """
         while True:
             user_input = input(prompt_ask).strip().lower()
@@ -433,7 +447,14 @@ class TerminalChat(IChat):
                         )
                     continue
 
+                case "clear":
+
+                    os.system("cls" if os.name == "nt" else "clear")
+                    continue
+
                 case "/clear":
+
+                    os.system("cls" if os.name == "nt" else "clear")  # Clear terminal
                     agent.attribute.memory.clear()
                     continue
 

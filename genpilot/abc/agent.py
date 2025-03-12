@@ -46,6 +46,7 @@ class Attribute:
     memory: IMemory = None
     model_config: dict = None  # Default value to empty dict
     permission: ActionPermission = ActionPermission.ALWAYS
+    human_on_loop: bool = True
 
     def __post_init__(self):
         if self.model_config is None:

@@ -13,14 +13,14 @@ logging.basicConfig(level=logging.WARNING)
 
 # Set logging level to WARNING or higher to suppress INFO level logs
 import logging
-from genpilot.abc.agent import final_answer
+from genpilot.abc.agent import ActionPermission, final_answer
 
 
 def terminal_list_cluster_printer(agent, func_name, func_args):
     import rich
 
     console = rich.get_console()
-    console.print(f"  🛠  [yellow]Managed Clusters[/yellow] ⎈ ")
+    console.print(f"   🛠  [yellow]Managed Clusters[/yellow] ⎈ ")
 
 
 async def main():
@@ -41,10 +41,13 @@ async def main():
             "name": "groq/llama-3.3-70b-specdec",
             "config": {"temperature": 0.2, "stream": False},
         },
-        system="You are an AI assistant. Please provide the result once you have the answer to the latest task or issue, without calling any additional tools.",
+        system="You are an AI assistant.",
         mcp_server_config=sys.argv[1],
-        # tools=[final_answer],
+        tools=[final_answer],
+        action_permission=ActionPermission.NONE,
+        human_on_loop=False,
     )
+
     try:
         await agent.connect_to_mcp_server()
         await agent.chatbot()

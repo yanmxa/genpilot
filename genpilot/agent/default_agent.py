@@ -11,7 +11,13 @@ from openai.types.chat import (
     ChatCompletionMessageToolCall,
 )
 import genpilot as gp
-from genpilot.abc.agent import ActionType, Attribute, final_answer, ModelConfig
+from genpilot.abc.agent import (
+    ActionPermission,
+    ActionType,
+    Attribute,
+    final_answer,
+    ModelConfig,
+)
 from genpilot.utils.function_to_schema import func_to_param, function_to_schema
 from genpilot.utils.mcp_server_config import AppConfig, McpServerConfig
 from genpilot.tools.mcp_toolkit import McpToolkit
@@ -42,12 +48,16 @@ class Agent(IAgent):
         # TODO: consider introduce terminate condition with autogen 4.0
         max_iter: str = 6,
         mcp_server_config: str = "",
+        action_permission: ActionPermission = ActionPermission.ALWAYS,
+        human_on_loop: bool = True,
     ):
         self._attribute = Attribute(
             name,
             model_name=model_config["name"],
             model_config=model_config["config"],
             description=description or system,
+            permission=action_permission,
+            human_on_loop=human_on_loop,
         )
         self.chat = chat
 
