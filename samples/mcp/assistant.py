@@ -43,7 +43,7 @@ async def main():
         },
         system="You are an AI assistant.",
         mcp_server_config=sys.argv[1],
-        tools=[final_answer],
+        tools=[],
         action_permission=ActionPermission.NONE,
         human_on_loop=False,
     )

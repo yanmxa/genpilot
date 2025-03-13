@@ -1,5 +1,5 @@
 import json
-from typing import Dict, List, Optional, Union
+from typing import Callable, List, Dict, Union
 from openai.types.chat import (
     ChatCompletionMessage,
     ChatCompletionMessageParam,
@@ -50,6 +50,7 @@ class Agent(IAgent):
         mcp_server_config: str = "",
         action_permission: ActionPermission = ActionPermission.ALWAYS,
         human_on_loop: bool = True,
+        terminal_func: Callable = final_answer,
     ):
         self._attribute = Attribute(
             name,
@@ -62,6 +63,8 @@ class Agent(IAgent):
         self.chat = chat
 
         # tools.append(final_answer)
+        if final_answer:
+            tools.append(terminal_func)
         self.functions, self.function_schemas = self.register_function_tools(tools)
         self.agents, self.agent_schemas = self.register_agent_tools(handoffs)
 

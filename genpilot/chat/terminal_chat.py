@@ -2,6 +2,7 @@ import asyncio
 import rich.console
 import sys
 import rich
+from syncer import sync
 import os
 import rich.rule
 from rich.prompt import Prompt
@@ -155,7 +156,7 @@ class TerminalChat(IChat):
 
             traceback.print_exc()
 
-        completion_message = self.reasoning_print(response, agent)
+        completion_message = await self.reasoning_print(response, agent)
 
         message = completion_message.model_dump(mode="json")
         # for 'role:assistant' the following must be satisfied[('messages.2' : property 'refusal' is unsupported
@@ -173,7 +174,7 @@ class TerminalChat(IChat):
     #    - print agent function without title
     #    - print invoking function with title
     # 4. print tool call in invoking
-    def reasoning_print(
+    async def reasoning_print(
         self, response: Union[ModelResponse, CustomStreamWrapper], agent: IAgent
     ) -> ChatCompletionMessage:
 
@@ -195,7 +196,9 @@ class TerminalChat(IChat):
                 if delta.tool_calls and len(delta.tool_calls) > 0:
                     for delta_tool_call in delta.tool_calls:
                         # for the final function call
-                        content = self.get_answer_tool_result(delta_tool_call)
+                        content = await self.get_answer_tool_result(
+                            delta_tool_call, agent
+                        )
                         if content:
                             completion_message_content = f"{content}"
                             break
@@ -228,7 +231,9 @@ class TerminalChat(IChat):
 
             # if final answer, convert it into content message
             if completion_message.tool_calls and len(completion_message.tool_calls) > 0:
-                content = self.get_answer_tool_result(completion_message.tool_calls[0])
+                content = await self.get_answer_tool_result(
+                    completion_message.tool_calls[0], agent
+                )
                 if content:
                     completion_message.content = f"{content}"
                     completion_message.tool_calls = None
@@ -242,12 +247,14 @@ class TerminalChat(IChat):
 
         return completion_message
 
-    def get_answer_tool_result(self, tool_call: ChatCompletionMessageToolCall) -> str:
+    async def get_answer_tool_result(
+        self, tool_call: ChatCompletionMessageToolCall, agent: IAgent
+    ) -> str:
         func_args = tool_call.function.arguments
         if tool_call.function.name == final_answer.__name__:
             if isinstance(func_args, str):
                 func_args = json.loads(func_args)
-            content = func_args["answer_content"]
+            content = await agent.tool_call(tool_call.function.name, func_args)
             return f"📌 {content}"
         return None
 
@@ -265,6 +272,7 @@ class TerminalChat(IChat):
     async def acting(
         self, agent: IAgent, action_type: ActionType, func_name, func_args
     ) -> str:
+        spinner = "bouncingBar"
         result = ""
         # print tool info
         if action_type == ActionType.FUNCTION:
@@ -278,7 +286,7 @@ class TerminalChat(IChat):
                 return f"Action({func_name}: {func_args}) are not allowed by the user."
 
             # invoke function
-            with self.console.status(f"", spinner="star"):
+            with self.console.status(f"", spinner=spinner):
                 result = await agent.tool_call(func_name, func_args)
 
             # print result
@@ -298,7 +306,7 @@ class TerminalChat(IChat):
                 return f"Action({func_name}: {func_args}) are not allowed by the user."
 
             # invoke function
-            with self.console.status(f"", spinner="star"):
+            with self.console.status(f"", spinner=spinner):
                 contents: types.CallToolResult = await agent.tool_call(
                     func_name, func_args
                 )
