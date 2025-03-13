@@ -10,7 +10,6 @@ from genpilot.agent import Agent
 from genpilot import IAgent
 
 
-import chainlit as cl
 import rich
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))

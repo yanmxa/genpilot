@@ -22,7 +22,6 @@ from openai.types.chat import (
 )
 from openai.types.chat.chat_completion_message_tool_call import Function
 
-from genpilot.chat.chainlit_chat import rprint
 from ..abc.agent import IAgent
 from ..abc.chat import IChat
 
