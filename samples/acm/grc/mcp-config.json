@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "multicluster-mcp-server": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "multicluster-mcp-server@latest"
+      ]
+    }
+  }
+}

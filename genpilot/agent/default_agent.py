@@ -39,7 +39,7 @@ class Agent(IAgent):
         self,
         name,
         system,
-        tools: List[callable] = [],
+        tools: List[callable] = None,
         handoffs: List[IAgent] = [],
         memory: IMemory = None,
         chat: IChat = None,
@@ -62,8 +62,11 @@ class Agent(IAgent):
         )
         self.chat = chat
 
+        if not tools:
+            tools = []
+
         # tools.append(final_answer)
-        if final_answer:
+        if terminal_func:
             tools.append(terminal_func)
         self.functions, self.function_schemas = self.register_function_tools(tools)
         self.agents, self.agent_schemas = self.register_agent_tools(handoffs)
@@ -245,8 +248,9 @@ class Agent(IAgent):
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "task": "string",
-                            "description": "The task you want the agent to perform",
+                            "task": {
+                                "type": "string",
+                            },
                         },
                         "required": ["task"],
                     },

@@ -42,6 +42,7 @@ from openai.types.chat.chat_completion_message_tool_call import Function
 
 from genpilot.abc.agent import ActionPermission, ActionType, Attribute, final_answer
 from genpilot.tools.code_executor import terminal_code_executor_printer
+from genpilot.utils.format import is_valid_yaml
 from ..abc.agent import IAgent
 from ..abc.chat import IChat
 from ..tools.code_executor import code_executor, terminal_code_executor_printer
@@ -109,9 +110,19 @@ class TerminalChat(IChat):
         title = f"{avatar} [bold bright_cyan]{from_agent_name}[/bold bright_cyan] ➫ {to_agent_name}: [dim green]({timestamp})[/]"
 
         self.console.rule(title, align="left", style="dim")
-        markdown = Markdown(content)
-        self.console.print(Padding(markdown, (1, 0, 1, 3)), end="")
-        # print()
+
+        if is_valid_yaml(content):
+            syntax = Syntax(
+                content,
+                "yaml",
+                theme="monokai",
+                line_numbers=True,
+            )
+            self.console.print(Padding(syntax, (0, 0, 1, 3)))
+        else:
+            markdown = Markdown(content)
+            self.console.print(Padding(markdown, (1, 0, 1, 3)), end="")
+        print()
 
     async def reasoning(
         self, agent: IAgent, tool_schemas: List
@@ -136,10 +147,9 @@ class TerminalChat(IChat):
         response = None
         avatar = self.avatars.get(agent.attribute.name, self.avatars.get("assistant"))
         try:
-            # import rich
-
             # rprint = rich.get_console().print
-            # rprint(agent.attribute.memory.get())
+            # rprint(tool_schemas)
+
             with self.console.status(
                 f"{avatar} [cyan]{agent.attribute.name} ...[/]", spinner="aesthetic"
             ):
@@ -200,7 +210,7 @@ class TerminalChat(IChat):
                             delta_tool_call, agent
                         )
                         if content:
-                            completion_message_content = f"{content}"
+                            completion_message_content = content
                             break
 
                         # tool_call is ChatCompletionDeltaToolCall
@@ -235,14 +245,23 @@ class TerminalChat(IChat):
                     completion_message.tool_calls[0], agent
                 )
                 if content:
-                    completion_message.content = f"{content}"
+                    completion_message.content = content
                     completion_message.tool_calls = None
 
             if completion_message.content:
                 # Scenario 2: print complete content
                 self.agent_title_print(agent)
-                markdown = Markdown(completion_message.content)
-                self.console.print(Padding(markdown, (0, 0, 1, 3)))
+                if is_valid_yaml(completion_message.content):
+                    syntax = Syntax(
+                        completion_message.content,
+                        "yaml",
+                        theme="monokai",
+                        line_numbers=True,
+                    )
+                    self.console.print(Padding(syntax, (0, 0, 1, 3)))
+                else:
+                    markdown = Markdown(completion_message.content)
+                    self.console.print(Padding(markdown, (0, 0, 1, 3)))
                 # self.console.print(Padding(completion_message.content, (0, 0, 1, 3)))
 
         return completion_message
@@ -255,7 +274,8 @@ class TerminalChat(IChat):
             if isinstance(func_args, str):
                 func_args = json.loads(func_args)
             content = await agent.tool_call(tool_call.function.name, func_args)
-            return f"📌 {content}"
+            # self.console.print("   📌")
+            return content
         return None
 
     def agent_title_print(self, agent: IAgent):
@@ -322,7 +342,23 @@ class TerminalChat(IChat):
                 )  # Top, Right, Bottom, Left
         # agent forward
         else:
+            # task = func_args["task"]
+            # self.console.print(
+            #     Padding(Markdown(task), (0, 0, 1, 3))
+            # )  # Top, Right, Bottom, Left
             result = await agent.tool_call(func_name, func_args)
+            self.agent_title_print(agent=agent)
+            # if is_valid_yaml(result):
+            #     syntax = Syntax(
+            #         result,
+            #         "yaml",
+            #         theme="monokai",
+            #         line_numbers=True,
+            #     )
+            #     self.console.print(Padding(syntax, (0, 0, 1, 3)))
+            # else:
+            #     markdown = Markdown(result)
+            #     self.console.print(Padding(markdown, (0, 0, 1, 3)))
 
         return result
 
