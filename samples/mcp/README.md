@@ -36,7 +36,7 @@
 }
 ```
 
-### Constructing an Agent to Connect to the MCP Server
+### Constructing an Agent to Connect to the MCP Server - Refactoring
 
 To integrate GenPilot with MCP servers, follow the steps below. This example demonstrates how to create an agent that can connect to the MCP server and execute commands.
 

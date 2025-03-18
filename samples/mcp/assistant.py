@@ -1,3 +1,12 @@
+#!/usr/bin/env python3
+"""
+Usage:
+    python samples/mcp/assistant.py ./samples/mcp/assistant-server-config.json
+
+Description:
+    This script starts the assistant using the MCP server with the provided configuration file.
+"""
+
 import asyncio
 
 from genpilot.agent import Agent
@@ -11,8 +20,6 @@ import logging
 
 logging.basicConfig(level=logging.WARNING)
 
-# Set logging level to WARNING or higher to suppress INFO level logs
-import logging
 from genpilot.abc.agent import ActionPermission, final_answer
 
 
@@ -29,7 +36,7 @@ async def main():
         sys.exit(1)
 
     terminal = TerminalChat()
-
+    # beautiful printing
     terminal.register_tool_printer(
         func_name="clusters", printer=terminal_list_cluster_printer
     )

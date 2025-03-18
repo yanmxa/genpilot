@@ -1,22 +1,16 @@
+#!/usr/bin/env python3
+"""
+Usage:
+    python samples/mcp/client.py ./samples/mcp/assistant-server-config.json
+
+Description:
+    This script starts a MCP client and connects to the MCP server with the provided configuration file.
+"""
+
 import asyncio
 import sys
 
-# import logging
-
 from genpilot.mcp.manager import MCPServerManager
-
-
-# logging.basicConfig(level=logging.DEBUG)
-
-
-# logging.basicConfig(
-#     level=logging.DEBUG,
-#     format="%(asctime)s [%(levelname)s] %(message)s",
-#     handlers=[
-#         logging.FileHandler("app.log"),  # Save to file
-#         logging.StreamHandler(),  # Print to console
-#     ],
-# )
 
 
 # simplicity
@@ -29,6 +23,7 @@ async def with_async_context():
         print(clusters.content[0].text)
 
 
+# manual async context management
 async def manual_async_context():
     session_manager = MCPServerManager(sys.argv[1])  # Instantiate
 
@@ -46,6 +41,7 @@ async def manual_async_context():
         await session_manager.__aexit__(None, None, None)  # Ensure cleanup
 
 
+# reusability
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -60,7 +56,6 @@ async def managed_session(config: str) -> AsyncGenerator[MCPServerManager, None]
         await session_manager.__aexit__(None, None, None)
 
 
-# reusability
 async def with_decorator():
     async with managed_session(sys.argv[1]) as session_manager:
         schemas = session_manager.get_tool_schemas()

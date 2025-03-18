@@ -22,7 +22,6 @@ class MCPServerManager:
         self.includes: List[str] = includes  # includes servers
 
     async def __aenter__(self):
-        print("in")
         await self.exit_stack.__aenter__()  # Enter exit stack context
         await self.connect_to_server(self.config_path)
         await self.list_tools()
@@ -30,7 +29,6 @@ class MCPServerManager:
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
-        print("out")
         await self.exit_stack.__aexit__(
             exc_type, exc, tb
         )  # Exit all registered sessions
