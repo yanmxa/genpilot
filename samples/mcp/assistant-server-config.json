@@ -5,7 +5,8 @@
       "args": [
         "-y",
         "multicluster-mcp-server@latest"
-      ]
+      ],
+      "exclude_tools": []
     },
     "kubernetes": {
       "command": "npx",
