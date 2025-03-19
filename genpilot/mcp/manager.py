@@ -1,12 +1,13 @@
 from typing import List
 from contextlib import AsyncExitStack
-from mcp import ClientSession
+from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
-from genpilot.mcp.config import AppConfig, MCPServerConfig
-from genpilot.mcp.server import MCPServerSession
+from genpilot.mcp.config import AppConfig
+from genpilot.mcp.server import MCPServer
 from rich.console import Console
 from rich.table import Table
 import asyncio
+import os
 
 
 class MCPServerManager:
@@ -17,7 +18,7 @@ class MCPServerManager:
             config_path (str): json config file
             includes (_type_, optional): include mcp servers. Defaults to None.
         """
-        self.servers: List[MCPServerSession] = []
+        self.servers: List[MCPServer] = []
         self.exit_stack = AsyncExitStack()  # Single exit stack to manage all sessions
         self.config_path = config_path
         self.includes: List[str] = includes  # includes servers
@@ -34,7 +35,7 @@ class MCPServerManager:
             exc_type, exc, tb
         )  # Exit all registered sessions
 
-    async def agent_function_tools(self):
+    async def function_tools(self):
         """Aggregates function tools from all server sessions sequentially."""
         function_tools = []
 
@@ -50,33 +51,36 @@ class MCPServerManager:
             raise ValueError("Server config not set")
 
         app_config = AppConfig.load(mcp_server_config)
-        server_configs = app_config.get_mcp_server_configs()
+
+        mcp_servers = [
+            MCPServer(
+                name=name,
+                server_params=StdioServerParameters(
+                    command=config.command,
+                    args=config.args or [],
+                    env={**(config.env or {}), **os.environ},
+                ),
+                exclude_tools=config.exclude_tools or [],
+            )
+            for name, config in app_config.get_enabled_servers().items()
+        ]
 
         self.servers = []
-        for cfg in server_configs:
-            if not self.includes or cfg.server_name in self.includes:
-                session = await self._initialize_session(cfg)  # Await one by one
-                self.servers.append(session)
+        for server in mcp_servers:
+            if not self.includes or server.name in self.includes:
+                await self._initialize_session(server)  # Await one by one
+                self.servers.append(server)
 
-    async def _initialize_session(
-        self, server_config: MCPServerConfig
-    ) -> MCPServerSession:
+    async def _initialize_session(self, mcp_server: MCPServer):
         """Initialize a session kit for a given MCP server configuration."""
         read, write = await self.exit_stack.enter_async_context(
-            stdio_client(server_config.server_params)
+            stdio_client(mcp_server.server_params)
         )
         client_session: ClientSession = await self.exit_stack.enter_async_context(
             ClientSession(read, write)
         )
-
         await client_session.initialize()
-
-        return MCPServerSession(
-            name=server_config.server_name,
-            server_params=server_config.server_params,
-            exclude_tools=server_config.exclude_tools,
-            client_session=client_session,
-        )
+        mcp_server.client_session = client_session
 
     async def _display_available_tools(self):
         """Displays available MCP tools in a formatted table using parallel execution."""

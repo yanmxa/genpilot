@@ -7,24 +7,6 @@ from mcp import StdioServerParameters, types, ClientSession
 from pydantic import BaseModel
 
 
-class MCPServerConfig(BaseModel):
-    """Configuration for an MCP server.
-
-    This class represents the configuration needed to connect to and identify an MCP server,
-    containing both the server's name and its connection parameters.
-
-    Attributes:
-        server_name (str): The name identifier for this MCP server
-        server_param (StdioServerParameters): Connection parameters for the server, including
-            command, arguments and environment variables
-        exclude_tools (list[str]): List of tool names to exclude from this server
-    """
-
-    server_name: str
-    server_params: StdioServerParameters
-    exclude_tools: list[str] = []
-
-
 @dataclass
 class ServerConfig:
     """Configuration for an MCP server."""
@@ -86,17 +68,3 @@ class AppConfig:
         return {
             name: config for name, config in self.mcp_servers.items() if config.enabled
         }
-
-    def get_mcp_server_configs(self) -> List[MCPServerConfig]:
-        return [
-            MCPServerConfig(
-                server_name=name,
-                server_params=StdioServerParameters(
-                    command=config.command,
-                    args=config.args or [],
-                    env={**(config.env or {}), **os.environ},
-                ),
-                exclude_tools=config.exclude_tools or [],
-            )
-            for name, config in self.get_enabled_servers().items()
-        ]

@@ -6,30 +6,30 @@ from agents.tool import FunctionTool
 from agents.run_context import RunContextWrapper
 
 
-class MCPServerSession(BaseModel):
+class MCPServer(BaseModel):
     name: str
     server_params: StdioServerParameters
-    client_session: Optional[ClientSession] = None
-    # tools: List[types.Tool] = []
     exclude_tools: list[str] = []
+    client_session: Optional[ClientSession] = None
 
     class Config:
         arbitrary_types_allowed = True  # Allow arbitrary types like ClientSession
 
-    # def build_tool_schemas(self) -> List[dict]:
-    #     tool_schemas = [
-    #         {
-    #             "type": "function",
-    #             "function": {
-    #                 "name": tool.name,
-    #                 "description": tool.description,
-    #                 "parameters": tool.inputSchema,
-    #             },
-    #         }
-    #         for tool in self.tools
-    #         if tool.name not in self.exclude_tools
-    #     ]
-    #     return tool_schemas
+    # Deprecated
+    def _build_tool_schemas(self) -> List[dict]:
+        tool_schemas = [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": tool.inputSchema,
+                },
+            }
+            for tool in self.tools
+            if tool.name not in self.exclude_tools
+        ]
+        return tool_schemas
 
     async def function_tools(self) -> List[FunctionTool]:
         """Convert MCP tools into agent SDK tools."""

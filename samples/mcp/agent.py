@@ -12,8 +12,8 @@ load_dotenv()
 
 
 async def main():
-    async with MCPServerManager(sys.argv[1]) as manager:
-        mcp_server_tools = await manager.agent_function_tools()
+    async with MCPServerManager(sys.argv[1]) as server_manager:
+        mcp_server_tools = await server_manager.function_tools()
         agent = Agent(
             name="assistant",
             instructions="You are an AI assistant.",
