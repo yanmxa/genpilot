@@ -7,7 +7,7 @@ from mcp import StdioServerParameters, types, ClientSession
 from pydantic import BaseModel
 
 
-class McpServerConfig(BaseModel):
+class MCPServerConfig(BaseModel):
     """Configuration for an MCP server.
 
     This class represents the configuration needed to connect to and identify an MCP server,
@@ -87,9 +87,9 @@ class AppConfig:
             name: config for name, config in self.mcp_servers.items() if config.enabled
         }
 
-    def get_mcp_configs(self) -> List[McpServerConfig]:
+    def get_mcp_server_configs(self) -> List[MCPServerConfig]:
         return [
-            McpServerConfig(
+            MCPServerConfig(
                 server_name=name,
                 server_params=StdioServerParameters(
                     command=config.command,
