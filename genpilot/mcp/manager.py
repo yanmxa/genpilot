@@ -1,4 +1,5 @@
-from typing import List
+import typing
+from typing import List, Callable, Dict
 from contextlib import AsyncExitStack
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
@@ -11,7 +12,7 @@ import os
 
 
 class MCPServerManager:
-    def __init__(self, config_path: str, includes=None):
+    def __init__(self, config_path: str, includes=None, display_tools=True):
         """init the mcp server by the config file
 
         Args:
@@ -22,12 +23,14 @@ class MCPServerManager:
         self.exit_stack = AsyncExitStack()  # Single exit stack to manage all sessions
         self.config_path = config_path
         self.includes: List[str] = includes  # includes servers
+        self.tool_validators: Dict[str, Callable[[dict], str]] = {}
+        self.display_tools = display_tools
 
     async def __aenter__(self):
         await self.exit_stack.__aenter__()  # Enter exit stack context
         await self.connect_to_server(self.config_path)
-        # await self.list_tools()
-        await self._display_available_tools()
+        if self.display_tools:
+            await self._display_available_tools()
         return self
 
     async def __aexit__(self, exc_type, exc, tb):
@@ -35,12 +38,25 @@ class MCPServerManager:
             exc_type, exc, tb
         )  # Exit all registered sessions
 
+    def register_validator(self, tool_name: str, tool_validator: Callable[[dict], str]):
+        """
+        Registers a validator function for a given tool.
+
+        - `tool_name`: Name of the tool requiring validation.
+        - `tool_validator`: A function that validates input parameters.
+          Returns an empty string ("") to proceed or a non-empty string
+          to provide an alternative Human tool result.
+        """
+        self.tool_validators[tool_name] = tool_validator
+
     async def function_tools(self):
         """Aggregates function tools from all server sessions sequentially."""
         function_tools = []
 
         for session in self.servers:
-            tools = await session.function_tools()  # Await each session call one by one
+            tools = await session.function_tools(
+                self.tool_validators
+            )  # Await each session call one by one
             function_tools.extend(tools)
 
         return function_tools
@@ -95,7 +111,7 @@ class MCPServerManager:
 
         # Run function_tools() concurrently for all sessions
         results = await asyncio.gather(
-            *(session.function_tools() for session in self.servers)
+            *(session.function_tools(self.tool_validators) for session in self.servers)
         )
 
         for session, tools in zip(self.servers, results):

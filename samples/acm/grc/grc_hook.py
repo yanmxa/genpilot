@@ -42,7 +42,7 @@ class GrcAgentHooks(AgentHooks):
         self._print_event(f"🚀 **`{agent.name}` started**", "bold green")
         import sys
 
-        i = input("🚀 ").strip().lower()
+        i = input(" ").strip().lower()
         sys.stdout.write("\033[F")  # Move the cursor up one line
         sys.stdout.write("\033[K")  # Clear the line
 
@@ -86,3 +86,50 @@ class GrcAgentHooks(AgentHooks):
             f"✅ **Agent `{agent.name}` finished tool `{tool.name}`**\n\n**Result:** `{result}` \n",
             "bold green",
         )
+
+
+def yaml_applier_validator(func_args):
+    # if tool_name != "yaml_applier":
+    #     return
+
+    if "yaml" not in func_args:
+        return "yaml key is required"
+
+    cluster = "default"
+    if "cluster" in func_args:
+        cluster = func_args["cluster"]
+
+    if "yaml" in func_args and not isinstance(func_args["yaml"], str):
+        return "yaml value must be a string"
+
+    import rich
+    import yaml
+    from rich.syntax import Syntax
+    import sys
+
+    console = rich.get_console()
+    # Print YAML in a code block with syntax highlighting
+    try:
+        yaml_data = yaml.safe_load(func_args["yaml"])
+        yaml_str = yaml.dump(yaml_data, default_flow_style=False, sort_keys=False)
+        syntax = Syntax(yaml_str, "yaml", theme="monokai", line_numbers=False)
+        console.print(syntax)
+    except yaml.YAMLError as e:
+        return f"Invalid YAML format: {e}"
+
+    # Human-in-the-loop validation
+    user_input = (
+        console.input(
+            f"  🛠  Cluster - [yellow]{cluster}[/yellow] ⎈ Proceed with this YAML? (yes/no): "
+        )
+        .strip()
+        .lower()
+    )
+
+    if user_input in ["no", "n"]:
+        console.print("[red]Exiting process.[/red]")
+        sys.exit(0)  # Exit the process
+    elif user_input in ["yes", "y"]:
+        return None  # Continue execution
+    else:
+        return user_input  # Return the input if it's not "yes" or "no"

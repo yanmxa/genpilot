@@ -11,6 +11,7 @@ from agents import (
     TResponseInputItem,
     trace,
     ItemHelpers,
+    RunResult,
 )
 
 
@@ -23,7 +24,11 @@ from samples.acm.grc.grc_prompt import (
 
 from dotenv import load_dotenv
 from genpilot.mcp.manager import MCPServerManager
-from samples.acm.grc.grc_hook import EvaluationFeedback, GrcAgentHooks
+from samples.acm.grc.grc_hook import (
+    EvaluationFeedback,
+    GrcAgentHooks,
+    yaml_applier_validator,
+)
 
 load_dotenv()
 
@@ -34,6 +39,8 @@ async def main():
         sys.exit(1)
 
     async with MCPServerManager(sys.argv[1]) as server_manager:
+        server_manager.register_validator("yaml_applier", yaml_applier_validator)
+
         mcp_server_tools = await server_manager.function_tools()
 
         engineer = Agent(
@@ -45,11 +52,6 @@ async def main():
         )
         # result = await Runner.run(agent, "List all the kubernetes clusters")
         # print(result.final_output)
-
-        msg = input("What kind of policy would you like? \n")
-        input_items: list[TResponseInputItem] = [{"content": msg, "role": "user"}]
-
-        latest_grc: str | None = None
 
         critic = Agent(
             name="Critic",
@@ -65,27 +67,29 @@ async def main():
         )
 
         # generate the grc
+        msg = input("\n What kind of policy would you like? \n \n")
+        input_items: list[TResponseInputItem] = [{"content": msg, "role": "user"}]
+        latest_grc: str | None = None
+
         while True:
-            grc_result = await Runner.run(
-                author,
-                input_items,
+            # generate the policy
+            grc_result: RunResult = await Runner.run(
+                author, input_items, run_config=RunConfig(tracing_disabled=True)
             )
 
             input_items = grc_result.to_input_list()
             latest_grc = ItemHelpers.text_message_outputs(grc_result.new_items)
-            print("Policy generated")
 
-            evaluator_result = await Runner.run(critic, input_items)
+            # evaluate
+            evaluator_result = await Runner.run(
+                critic, input_items, run_config=RunConfig(tracing_disabled=True)
+            )
             result: EvaluationFeedback = evaluator_result.final_output
 
-            print(f"Evaluator score: {result.score}")
-
             if result.score == "pass":
-                print("GRC is good enough, exiting.")
                 break
 
-            print("Re-running with feedback")
-
+            # feedback
             input_items.append(
                 {"content": f"Feedback: {result.feedback}", "role": "user"}
             )
@@ -96,14 +100,16 @@ async def main():
 
         engineer_result = ""
         while True:
-            engineer_result = await Runner.run(engineer, input_items)
+            engineer_result = await Runner.run(
+                engineer, input_items, run_config=RunConfig(tracing_disabled=True)
+            )
             input_items = engineer_result.to_input_list()
 
             input_items.append(
                 {"content": f"{engineer_result.new_items}", "role": "user"}
             )
             print()
-            user_input = input("Continue? (yes/no): ").strip().lower()
+            user_input = input(" Continue? (yes/no): ").strip().lower()
 
             if user_input in ["no", "n"]:
                 break
@@ -111,17 +117,14 @@ async def main():
                 continue
             input_items.append({"content": f"User Input: {user_input}", "role": "user"})
 
-        print(f"Input Items:\n {input_items}")
-        print(f"Engineer Result:\n {engineer_result.to_input_list()}")
+        # input(" Continue? (yes/no): ").strip().lower()
+        # print(f"Input Items:\n {input_items}")
+        # print(f"Engineer Result:\n {engineer_result}")
 
 
-# Create an ACM policy to create a namespace called lightspeed in my cluster
 if __name__ == "__main__":
     asyncio.run(main())
 
 """
 $ python samples/mcp/agent.py ./samples/mcp/assistant-server-config.json
-
-> "Create an ACM policy to create a namespace called lightspeed in my cluster"
-
 """
