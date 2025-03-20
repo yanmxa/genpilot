@@ -16,7 +16,7 @@ class MCPServerManager:
 
         Args:
             config_path (str): json config file
-            includes (_type_, optional): include mcp servers. Defaults to None.
+            includes (_type_, optional): include mcp servers. Defaults to None means all.
         """
         self.servers: List[MCPServer] = []
         self.exit_stack = AsyncExitStack()  # Single exit stack to manage all sessions

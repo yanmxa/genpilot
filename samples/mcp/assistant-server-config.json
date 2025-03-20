@@ -6,7 +6,7 @@
         "-y",
         "multicluster-mcp-server@latest"
       ],
-      "exclude_tools": []
+      "exclude_tools": ["connect_cluster_via_admin"]
     },
     "kubernetes": {
       "command": "npx",

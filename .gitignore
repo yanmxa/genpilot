@@ -13,3 +13,4 @@ myenv
 
 node_modules
 package-lock.json
+samples/github/*.json

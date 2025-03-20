@@ -4,6 +4,7 @@ from mcp import StdioServerParameters, types, ClientSession, Tool
 from typing import Optional, List, Any
 from agents.tool import FunctionTool
 from agents.run_context import RunContextWrapper
+from genpilot.tools.tool_validator import tool_call_validator
 
 
 class MCPServer(BaseModel):
@@ -43,6 +44,11 @@ class MCPServer(BaseModel):
             params = (
                 json.loads(parameters) if isinstance(parameters, str) else parameters
             )
+            # human in loop
+            result = tool_call_validator(tool_name, params)
+            if result:
+                return result
+            # add access control in here
             result: types.CallToolResult = await self.client_session.call_tool(
                 tool_name, params
             )
@@ -59,4 +65,5 @@ class MCPServer(BaseModel):
                 strict_json_schema=False,
             )
             for tool in tools_result.tools
+            if tool.name not in self.exclude_tools
         ]

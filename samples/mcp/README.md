@@ -18,7 +18,8 @@
     },
     "youtube": {
       "command": "npx",
-      "args": ["-y", "github:anaisbetts/mcp-youtube"]
+      "args": ["-y", "github:anaisbetts/mcp-youtube"],
+      "exclude_tools": ["..."] // you can configure to exclude tools from the current mcp server
     },
     "mcp-server-commands": {
       "command": "npx",
@@ -26,7 +27,8 @@
       "requires_confirmation": [
         "run_command",
         "run_script"
-      ]
+      ],
+      "enabled": false     // choose disable or enable it
     },
      "multicluster-mcp-server": {
       "command": "node",
