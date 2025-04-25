@@ -46,13 +46,14 @@ class MCPServer(BaseModel):
                 json.loads(parameters) if isinstance(parameters, str) else parameters
             )
             # human in loop
-            tool_validator = tool_validators[tool_name]
-            if tool_validator:
-                result = tool_validator(
-                    params
-                )  # if result exist, then return the result, else go on
-                if result:
-                    return result
+            if tool_name in tool_validators:
+                tool_validator = tool_validators[tool_name]
+                if tool_validator:
+                    result = tool_validator(
+                        params
+                    )  # if result exist, then return the result, else go on
+                    if result:
+                        return result
 
             # add access control in here
             result: types.CallToolResult = await self.client_session.call_tool(

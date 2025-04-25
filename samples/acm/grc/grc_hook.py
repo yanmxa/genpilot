@@ -89,9 +89,6 @@ class GrcAgentHooks(AgentHooks):
 
 
 def yaml_applier_validator(func_args):
-    # if tool_name != "yaml_applier":
-    #     return
-
     if "yaml" not in func_args:
         return "yaml key is required"
 
